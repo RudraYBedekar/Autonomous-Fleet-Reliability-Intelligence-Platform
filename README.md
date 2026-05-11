@@ -1,193 +1,197 @@
+Autonomous Fleet Reliability Intelligence Platform 🚜
 
-# ⚠️ Important Notice
+A real-time fleet intelligence platform designed for telemetry ingestion, anomaly detection, predictive maintenance, and AI-assisted operational analytics for autonomous and connected vehicle systems.
 
-**Do not push this project to a public GitHub repository.**
+This platform can be used across multiple industries where large-scale telemetry, operational monitoring, and real-time decision-making are critical. It is highly applicable in autonomous vehicle fleets, logistics and transportation systems, industrial IoT environments, smart city infrastructure, manufacturing operations, warehouse robotics, defense systems, agricultural automation, and predictive maintenance platforms. Organizations can use it to monitor live vehicle movement, detect anomalies before failures occur, analyze operational efficiency, forecast component degradation, and build intelligent AI-assisted observability systems for mission-critical operations. The project also serves as a strong learning and prototyping environment for distributed systems, event-driven architectures, cloud-native analytics, AI-powered monitoring systems, and real-time operational intelligence.
 
-This project contains files (such as `.env`, local data, and credentials) that are protected by `.gitignore` but may still contain sensitive or private information. Always review your files and repository settings before sharing or publishing.
+This project simulates a production-grade telemetry ecosystem where live vehicle data is streamed, processed, analyzed, and visualized in real time using distributed systems and modern AI-powered analytics.
 
+✨ Features
+Real-time telemetry streaming using Apache Kafka
+Live fleet tracking with WebSockets
+Interactive geospatial visualization using Deck.gl
+AI-assisted root cause analysis
+Predictive maintenance and Remaining Useful Life (RUL) forecasting
+Real-time anomaly detection using Isolation Forest and statistical models
+Modern operational dashboard with dark-mode UI
+Modular and scalable architecture
+Cloud-ready deployment structure
+AI-powered fleet intelligence workflows
+📸 Dashboard Preview
+Fleet Command Center
+![Fleet Dashboard](assets/dashboard2.png)
 
-# Autonomous Fleet Reliability Intelligence Platform 🚜
+The dashboard provides:
 
-## Project Purpose
+Live telemetry tracking
+Real-time fleet monitoring
+Vehicle health analytics
+Interactive operational maps
+Streaming telemetry trends
+Fleet-wide anomaly visualization
+High-performance geospatial rendering
+🏗️ System Architecture
+Autonomous Vehicles / IoT Sensors
+                │
+                ▼
+        Apache Kafka Streams
+                │
+                ▼
+      FastAPI Backend Services
+                │
+ ┌──────────────┼──────────────┐
+ ▼              ▼              ▼
+Telemetry   ML Analytics   WebSocket Hub
+ Storage     Engine
+                │
+                ▼
+      React + Deck.gl Dashboard
+                │
+                ▼
+      AI Fleet Copilot / RAG
+🧠 AI & Analytics Engine
 
-This project was created as a hands-on learning platform to explore modern, real-time data engineering, analytics, and AI techniques in the context of autonomous vehicle fleet management. It is designed for anyone interested in building scalable, cloud-ready systems and understanding how streaming, analytics, and AI can be combined for actionable insights. The platform is ideal for:
-- Learning distributed systems and event-driven architectures
-- Experimenting with real-time analytics and anomaly detection
-- Practicing full-stack development with modern tools
-- Demonstrating end-to-end solutions for reliability and observability
+The analytics engine continuously evaluates incoming telemetry streams to identify operational risks, predict failures, and provide actionable insights in real time.
 
----
+Live Telemetry Infrastructure
+![Streaming Infrastructure](assets/log.png)
 
-## 🏗️ System Architecture
+FastAPI and WebSocket backend infrastructure processing real-time telemetry events, fleet synchronization, and streaming analytics workflows.
 
-- **Frontend**: React, Tailwind CSS, Vite, Deck.gl (high-performance map rendering)
-- **Backend API**: FastAPI, WebSockets
-- **Streaming Layer**: Apache Kafka (KRaft mode)
-- **Database**: PostgreSQL (or SQLite for local testing) via SQLAlchemy
-- **ML & Analytics**: Isolation Forest, Z-Score Anomaly Detection, RUL Forecasting
-- **AI Copilot**: LangChain + OpenAI RAG for root cause analysis
+Real-Time Fleet Tracking
+![Fleet Tracking](assets/Map.png)
 
-## 🚀 Getting Started (No Docker Required)
+Interactive geospatial visualization powered by Deck.gl and MapLibre for live fleet movement simulation and operational intelligence monitoring.
 
-This project is designed to run locally on Windows using Python virtual environments and native Kafka binaries.
+Included Analytics Modules
+Isolation Forest anomaly detection
+Z-Score based anomaly scoring
+Predictive maintenance forecasting
+Fleet health scoring
+Telemetry trend analysis
+Root cause inference engine
+Operational intelligence workflows
+Example Detections
+Cooling system degradation
+Sensor instability
+Voltage fluctuations
+Power delivery failures
+Fleet-wide anomaly patterns
+Route-level operational irregularities
+⚡ Technology Stack
+Frontend
+React
+Vite
+Tailwind CSS
+Deck.gl
+MapLibre GL
+Backend
+FastAPI
+WebSockets
+SQLAlchemy
+Streaming & Infrastructure
+Apache Kafka (KRaft Mode)
+PostgreSQL / SQLite
+Docker-ready architecture
+AI / Machine Learning
+Scikit-learn
+Isolation Forest
+LangChain
+OpenAI API Integration
+🚀 Real-Time Capabilities
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+ (for frontend)
+The platform supports:
 
-### Quick Start
-1. **Setup backend and Kafka:**
-	```cmd
-	cd infrastructure
-	setup.bat
-	```
-2. **Install frontend dependencies:**
-	```cmd
-	cd ../frontend
-	npm install
-	cd ..
-	```
-3. **Start all services:**
-	```cmd
-	cd infrastructure
-	start.bat
-	```
+High-frequency telemetry ingestion
+Live vehicle movement simulation
+Real-time anomaly alerts
+Streaming operational analytics
+Interactive fleet visualization
+AI-assisted diagnostics
 
-### Access Points
-- **Dashboard:** [http://localhost:5173](http://localhost:5173)
-- **API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
-*(If on Linux/Mac, you'll need to install Kafka and run it manually, or adapt the shell commands)*
+Vehicle telemetry data is continuously streamed through Kafka topics and broadcast to connected dashboard clients through WebSockets with low-latency updates.
 
+📂 Project Structure
+backend/          → FastAPI services and APIs
+frontend/         → React dashboard UI
+streaming/        → Kafka producers and consumers
+ml/               → AI and analytics models
+infrastructure/   → Kafka setup and startup scripts
+assets/           → Images and architecture diagrams
+🚀 Getting Started
+Prerequisites
+Python 3.10+
+Node.js 18+
+Apache Kafka
+Git
+🔧 Installation
+1. Clone the Repository
+git clone <your-repository-url>
+cd telemetry-project
+2. Setup Backend & Kafka
+cd infrastructure
+setup.bat
+3. Install Frontend Dependencies
+cd ../frontend
+npm install
+4. Start All Services
+cd ../infrastructure
+start.bat
+🌐 Access Points
+Service	URL
+Dashboard	http://localhost:5173
 
-### Configuration
-A `.env` file will be created in the root directory on first run:
-- Keep `DATABASE_URL` as SQLite for quick start, or set to PostgreSQL for production.
-- Add your `OPENAI_API_KEY` to enable the AI Copilot feature.
+FastAPI Docs	http://localhost:8000/docs
 
-### Access Points
-- **Dashboard**: [http://localhost:5173](http://localhost:5173)
-- **API Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+WebSocket Endpoint	ws://localhost:8000/ws/telemetry
+🔴 Live Simulation
 
+To activate live fleet simulation:
 
-## ✨ Key Features
-- **Live WebSocket Streaming:** Real-time vehicle movement and chart updates
-- **Root Cause Analysis Engine:** AI and heuristics distinguish between sensor anomalies (e.g., "Cooling Fan Failure" vs. "Power Fluctuation")
-- **AI Fleet Copilot:** Ask questions like "Which vehicles are failing?" directly in the UI
-- **Predictive Maintenance:** Forecast remaining useful life (RUL) for components
-- **Modern, Modular Codebase:** Easily extend or adapt for new use cases
+Open a new terminal window and run:
 
----
+python live_simulation.py
 
-## 📸 Screenshots
+Then enable Live Mode from the dashboard UI.
 
-Below are sample screenshots of the dashboard and analytics views you can expect from this project:
+📊 Example Use Cases
+Fleet Management
 
-### Dashboard Overview
-![Dashboard Overview](assets/dashboard_overview.png)
+Monitor vehicle health, operational telemetry, and route intelligence in real time.
 
-### Geospatial Fleet View
-![Geospatial View](assets/geospatial_view.png)
+Predictive Maintenance
 
-### Predictive Maintenance Analytics
-![Predictive Maintenance](assets/predictive_maintenance.png)
+Forecast component failures before operational breakdowns occur.
 
----
+Smart City Infrastructure
 
-## License
-This project is for educational and demonstration purposes. Feel free to use, modify, and extend it for your own learning or prototyping needs.
+Analyze distributed transportation telemetry streams and operational behavior.
 
-=======
-# Hardware Reliability Analytics for Autonomous Sensor Fleet 🚜
+Industrial IoT
 
-Hey there! 👋 Welcome to the **Hardware Reliability Analytics** project.
+Track machine telemetry and detect operational anomalies across industrial systems.
 
-This is a dashboard I built to monitor the health and reliability of a fictional autonomous vehicle fleet. The idea was to create something that simulates real telemetry data (like LiDAR temps, battery voltage, etc.) and then uses that data to predict when parts might fail. **Note: All data in this project is synthetic and generated entirely using custom Python scripts to mimic real-world scenarios.**
+Autonomous Systems Research
 
-It's running a simulation of vehicles driving around **Mowry Ave in Fremont, CA**, and you can track everything in real-time.
+Experiment with distributed systems, AI analytics, and real-time telemetry pipelines.
 
-![Dashboard Overview](assets/dashboard_overview.png)
+Warehouse Robotics
 
-## What's Inside?
+Monitor robotic fleets, battery health, and operational reliability.
 
-### 1. 🗺️ Live Fleet Tracking
-I hooked up a geospatial view so you can see exactly where the vehicles are. They move in real-time if you run the simulation script.
-- **Location**: Mowry Ave, Fremont, CA.
-- **Tech**: I used Pydeck for the map because it handles street-level zooming way better than the standard map tools.
+🔮 Future Improvements
+Multi-region fleet simulation
+Historical route replay
+Driver behavior analytics
+Alert prioritization engine
+Reinforcement learning-based optimization
+Kubernetes deployment
+Edge telemetry processing
+AI-generated operational reports
+Distributed microservice orchestration
+📈 Why This Project Matters
 
-![Geospatial View](assets/geospatial_view.png)
+Modern autonomous and connected systems generate massive volumes of telemetry data that require real-time processing, intelligent anomaly detection, and operational observability.
 
-### 2. 🔮 Predictive Maintenance (RUL)
-Instead of just waiting for things to break, I added a "Predictive Maintenance" tab.
-- It calculates the **Remaining Useful Life (RUL)** for sensors.
-- If a sensor drops below 200 hours of estimated life, it flags it so you can "fix" it before it fails.
-
-![Predictive Maintenance](assets/predictive_maintenance.png)
-
-### 3. 📊 The Data Stuff
-- **Metrics**: Tracks Mean Time Between Failures (MTBF) and critical alerts.
-- **Anomaly Detection**: I'm running two checks on the data:
-    - Simple Z-Score (for obvious spikes).
-    - Isolation Forest (Machine Learning) to catch the weird stuff that isn't just a simple spike.
-
-## 🏗️ System Architecture
-
-Here's how the data flows through the system:
-
-```mermaid
-graph TD
-    subgraph Data_Sources [Data Sources]
-        DG[data_generator.py<br/>Historical Data] -->|CSV| ETL[etl_pipeline.py]
-        LS[live_simulation.py<br/>Real-time Streams] -->|Direct Write| DB
-    end
-
-    subgraph Storage [Storage]
-        ETL -->|Insert| DB[(SQLite Database<br/>telemetry.db)]
-    end
-
-    subgraph Analytics_Logic [Analytics & Logic]
-        DB -->|Read| AE[analytics_engine.py]
-        AE -->|Metrics & Predictions| DS
-    end
-
-    subgraph Visualization [Visualization]
-        DS[dashboard.py<br/>Streamlit App]
-        DS -->|Map| Pydeck[Pydeck Map]
-        DS -->|Charts| Plotly[Plotly Charts]
-    end
-    
-    style DB fill:#f9f,stroke:#333,stroke-width:2px
-    style DS fill:#bbf,stroke:#333,stroke-width:2px
-```
-
-## How to Run It
-
-First, grab the dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-### 1. Generate the Data only once
-You need some data to start with. Run this to generate a week's worth of history and set up the database:
-```bash
-python data_generator.py
-python etl_pipeline.py
-```
-
-### 2. Launch the Dashboard
-This fires up the UI:
-```bash
-streamlit run dashboard.py
-```
-
-### 3. 🔴 Turning on Live Mode (The Cool Part)
-If you want to see the blue dots move on the map:
-
-1.  Open a **new terminal window**.
-2.  Run the simulation script:
-    ```bash
-    python live_simulation.py
-    ```
-3.  Go back to your browser dashboard and toggle the **"Live Mode"** switch in the top right.
-4.  Watch it go! 🚀
-
+This platform demonstrates how distributed streaming systems, machine learning models, AI copilots, and modern visualization frameworks can work together to build scalable fleet intelligence infrastructure for real-world operational environments.
 
