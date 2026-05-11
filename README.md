@@ -17,9 +17,17 @@ This project simulates a production-grade telemetry ecosystem where live vehicle
 - Modular and scalable architecture
 - Cloud-ready deployment structure
 - AI-powered fleet intelligence workflows
-📸 Dashboard Preview
-Fleet Command Center
-![Fleet Dashboard](assets/dashboard2.png)
+
+## 📸 Dashboard Preview
+
+### Fleet Command Center
+![Fleet Dashboard](assets/dashboard.png)
+
+This dashboard provides a real-time overview of your autonomous fleet operations, including:
+- Live vehicle tracking on an interactive map
+- Telemetry trends for multiple vehicles
+- Anomaly and health analytics
+- Modern, dark-mode UI for command center environments
 
 The dashboard provides:
 
