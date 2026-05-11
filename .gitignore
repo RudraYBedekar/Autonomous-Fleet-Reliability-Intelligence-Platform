@@ -37,11 +37,7 @@ telemetry_data.csv
 *.bak
 *.swp
 
-venv/
-__pycache__/
-*.pyc
 
 telemetry_db.sqlite
 telemetry_data.csv
 
-.kafka-logs/
