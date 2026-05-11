@@ -6,30 +6,30 @@ This platform can be used across multiple industries where large-scale telemetry
 
 This project simulates a production-grade telemetry ecosystem where live vehicle data is streamed, processed, analyzed, and visualized in real time using distributed systems and modern AI-powered analytics.
 
-✨ Features
-Real-time telemetry streaming using Apache Kafka
-Live fleet tracking with WebSockets
-Interactive geospatial visualization using Deck.gl
-AI-assisted root cause analysis
-Predictive maintenance and Remaining Useful Life (RUL) forecasting
-Real-time anomaly detection using Isolation Forest and statistical models
-Modern operational dashboard with dark-mode UI
-Modular and scalable architecture
-Cloud-ready deployment structure
-AI-powered fleet intelligence workflows
+## ✨ Features
+- Real-time telemetry streaming using Apache Kafka
+- Live fleet tracking with WebSockets
+- Interactive geospatial visualization using Deck.gl
+- AI-assisted root cause analysis
+- Predictive maintenance and Remaining Useful Life (RUL) forecasting
+- Real-time anomaly detection using Isolation Forest and statistical models
+- Modern operational dashboard with dark-mode UI
+- Modular and scalable architecture
+- Cloud-ready deployment structure
+- AI-powered fleet intelligence workflows
 📸 Dashboard Preview
 Fleet Command Center
 ![Fleet Dashboard](assets/dashboard2.png)
 
 The dashboard provides:
 
-Live telemetry tracking
-Real-time fleet monitoring
-Vehicle health analytics
-Interactive operational maps
-Streaming telemetry trends
-Fleet-wide anomaly visualization
-High-performance geospatial rendering
+- Live telemetry tracking
+- Real-time fleet monitoring
+- Vehicle health analytics
+- Interactive operational maps
+- Streaming telemetry trends
+- Fleet-wide anomaly visualization
+- High-performance geospatial rendering
 🏗️ System Architecture
 Autonomous Vehicles / IoT Sensors
                 │
@@ -63,41 +63,46 @@ Real-Time Fleet Tracking
 
 Interactive geospatial visualization powered by Deck.gl and MapLibre for live fleet movement simulation and operational intelligence monitoring.
 
-Included Analytics Modules
-Isolation Forest anomaly detection
-Z-Score based anomaly scoring
-Predictive maintenance forecasting
-Fleet health scoring
-Telemetry trend analysis
-Root cause inference engine
-Operational intelligence workflows
-Example Detections
-Cooling system degradation
-Sensor instability
-Voltage fluctuations
-Power delivery failures
-Fleet-wide anomaly patterns
-Route-level operational irregularities
-⚡ Technology Stack
-Frontend
-React
-Vite
-Tailwind CSS
-Deck.gl
-MapLibre GL
-Backend
-FastAPI
-WebSockets
-SQLAlchemy
-Streaming & Infrastructure
-Apache Kafka (KRaft Mode)
-PostgreSQL / SQLite
-Docker-ready architecture
-AI / Machine Learning
-Scikit-learn
-Isolation Forest
-LangChain
-OpenAI API Integration
+## Included Analytics Modules
+- Isolation Forest anomaly detection
+- Z-Score based anomaly scoring
+- Predictive maintenance forecasting
+- Fleet health scoring
+- Telemetry trend analysis
+- Root cause inference engine
+- Operational intelligence workflows
+
+## Example Detections
+- Cooling system degradation
+- Sensor instability
+- Voltage fluctuations
+- Power delivery failures
+- Fleet-wide anomaly patterns
+- Route-level operational irregularities
+## ⚡ Technology Stack
+
+**Frontend:**
+- React
+- Vite
+- Tailwind CSS
+- Deck.gl
+- MapLibre GL
+
+**Backend:**
+- FastAPI
+- WebSockets
+- SQLAlchemy
+
+**Streaming & Infrastructure:**
+- Apache Kafka (KRaft Mode)
+- PostgreSQL / SQLite
+- Docker-ready architecture
+
+**AI / Machine Learning:**
+- Scikit-learn
+- Isolation Forest
+- LangChain
+- OpenAI API Integration
 🚀 Real-Time Capabilities
 
 The platform supports:
