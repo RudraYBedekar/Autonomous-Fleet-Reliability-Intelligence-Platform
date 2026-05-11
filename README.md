@@ -20,10 +20,21 @@ This project simulates a production-grade telemetry ecosystem where live vehicle
 
 ## 📸 Dashboard Preview
 
-### Fleet Command Center
+### Dashboard Previews
+
+**Fleet Command Center**
 ![Fleet Dashboard](assets/dashboard.png)
 
-This dashboard provides a real-time overview of your autonomous fleet operations, including:
+**Alternate Dashboard View**
+![Alternate Dashboard](assets/dashboard2.png)
+
+**Live Map Visualization**
+![Map Visualization](assets/Map.png)
+
+**System Log Analytics**
+![Log Analytics](assets/log.png)
+
+These dashboards provide a real-time overview of your autonomous fleet operations, including:
 - Live vehicle tracking on an interactive map
 - Telemetry trends for multiple vehicles
 - Anomaly and health analytics
