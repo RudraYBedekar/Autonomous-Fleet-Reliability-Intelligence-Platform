@@ -41,3 +41,6 @@ telemetry_data.csv
 telemetry_db.sqlite
 telemetry_data.csv
 
+# Kafka binaries
+infrastructure/kafka/
+*.jar
