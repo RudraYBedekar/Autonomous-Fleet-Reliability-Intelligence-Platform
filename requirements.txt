@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 fastapi
 uvicorn[standard]
 sqlalchemy
@@ -11,3 +12,13 @@ langchain
 langchain-openai
 pytest
 httpx
+=======
+pandas
+numpy
+sqlalchemy
+plotly
+streamlit
+scipy
+scikit-learn
+matplotlib
+>>>>>>> a512dbd7118d2e8a83969f77d632a0a17a25c95e
