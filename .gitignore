@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+venv/
+.env
+.env.*
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Kafka/infra
+infrastructure/kafka/logs/
+
+# Data
+*.sqlite3
+*.db
+*.csv
+exported_telemetry.csv
+telemetry_data.csv
+
+# VSCode
+.vscode/
+
+# Misc
+*.bak
+*.swp
