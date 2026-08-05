@@ -14,6 +14,7 @@ class TelemetryRecord(Base):
     vibration_g = Column(Float)
     latitude = Column(Float)
     longitude = Column(Float)
+    speed_kmh = Column(Float, nullable=True)
     status = Column(String)
     
     # ML Fields
