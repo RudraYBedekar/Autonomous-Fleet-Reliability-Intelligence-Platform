@@ -6,6 +6,7 @@ import MessageModal from './MessageModal';
 import VehicleContactActions from './VehicleContactActions';
 import AlertsPanel from './AlertsPanel';
 import ReplayScrubber from './ReplayScrubber';
+import { fmtNum } from '../utils/format';
 
 const GROUND_VEHICLE_PATTERN = /^car-\d{3}$/;
 
@@ -233,7 +234,7 @@ export default function FleetPanel({
               </div>
               <div className="text-gray-200">
                 {selectedLive?.eta_minutes != null
-                  ? `${selectedLive.eta_minutes.toFixed(0)} min`
+                  ? `${fmtNum(selectedLive.eta_minutes, 0)} min`
                   : '—'}
               </div>
             </div>
@@ -250,7 +251,7 @@ export default function FleetPanel({
                 <HeartPulse size={11} /> Health
               </div>
               <div className={healthColor(selectedLive?.health_score ?? selectedManifest.health_score)}>
-                {(selectedLive?.health_score ?? selectedManifest.health_score).toFixed(1)}%
+                {fmtNum(selectedLive?.health_score ?? selectedManifest.health_score, 1, '—')}%
               </div>
             </div>
             <div className="glass-panel p-2">
@@ -258,7 +259,7 @@ export default function FleetPanel({
                 <Battery size={11} /> Battery
               </div>
               <div className="text-gray-200">
-                {(selectedLive?.battery_pct ?? selectedManifest.battery_pct).toFixed(1)}%
+                {fmtNum(selectedLive?.battery_pct ?? selectedManifest.battery_pct, 1, '—')}%
               </div>
             </div>
             <div className="glass-panel p-2 col-span-2">
@@ -278,7 +279,7 @@ export default function FleetPanel({
                   <Wrench size={11} /> Maintenance RUL
                 </span>
                 <span className="text-gray-300 text-xs">
-                  {(selectedLive?.maintenance_rul_pct ?? 85).toFixed(0)}%
+                  {fmtNum(selectedLive?.maintenance_rul_pct ?? 85, 0)}%
                 </span>
               </div>
               <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
@@ -314,7 +315,7 @@ export default function FleetPanel({
           <div>
             <div className="flex justify-between text-[10px] text-gray-500 mb-1">
               <span>Trip progress</span>
-              <span>{(selectedLive?.trip_progress_pct ?? 0).toFixed(0)}%</span>
+              <span>{fmtNum(selectedLive?.trip_progress_pct ?? 0, 0)}%</span>
             </div>
             <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
               <div
@@ -391,7 +392,7 @@ export default function FleetPanel({
                   </span>
                 )}
                 {live?.eta_minutes != null && (
-                  <span className="text-gray-400 shrink-0">{live.eta_minutes.toFixed(0)}m ETA</span>
+                  <span className="text-gray-400 shrink-0">{fmtNum(live.eta_minutes, 0)}m ETA</span>
                 )}
                 <span className="flex items-center gap-0.5 text-purple-300 ml-auto shrink-0">
                   <Users size={9} /> {pax}
@@ -416,7 +417,7 @@ export default function FleetPanel({
                     style={{ width: `${health}%` }}
                   />
                 </div>
-                <span className={`text-[10px] ${healthColor(health)}`}>{health.toFixed(0)}%</span>
+                <span className={`text-[10px] ${healthColor(health)}`}>{fmtNum(health, 0)}%</span>
               </div>
 
               <VehicleContactActions

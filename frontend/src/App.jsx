@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import FleetPanel from './components/FleetPanel';
 import FleetMap from './components/Map';
+import ErrorBoundary from './components/ErrorBoundary';
 import { apiUrl, wsTelemetryUrl } from './api';
 
 function App() {
@@ -10,6 +11,12 @@ function App() {
   const [replayPath, setReplayPath] = useState([]);
   const [replayPoint, setReplayPoint] = useState(null);
   const liveRef = useRef(new globalThis.Map());
+
+  const handleSelect = useCallback((vehicleId) => {
+    setSelectedId(vehicleId);
+    setReplayPath([]);
+    setReplayPoint(null);
+  }, []);
 
   const handleReplayPath = useCallback((path) => {
     setReplayPath(path);
@@ -60,23 +67,27 @@ function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      <FleetPanel
-        fleetData={fleetData}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        manifest={manifest}
-        onReplayPath={handleReplayPath}
-        onReplayPoint={handleReplayPoint}
-      />
-      <main className="flex-1 min-w-0">
-        <FleetMap
-          data={fleetData}
+      <ErrorBoundary>
+        <FleetPanel
+          fleetData={fleetData}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={handleSelect}
           manifest={manifest}
-          replayPath={replayPath}
-          replayPoint={replayPoint}
+          onReplayPath={handleReplayPath}
+          onReplayPoint={handleReplayPoint}
         />
+      </ErrorBoundary>
+      <main className="flex-1 min-w-0 min-h-0 h-full">
+        <ErrorBoundary>
+          <FleetMap
+            data={fleetData}
+            selectedId={selectedId}
+            onSelect={handleSelect}
+            manifest={manifest}
+            replayPath={replayPath}
+            replayPoint={replayPoint}
+          />
+        </ErrorBoundary>
       </main>
     </div>
   );

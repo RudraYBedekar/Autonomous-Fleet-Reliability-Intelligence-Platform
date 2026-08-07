@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, PathLayer } from '@deck.gl/layers';
 import { Map as MapLibreMap } from 'react-map-gl';
@@ -42,19 +42,13 @@ const DEFAULT_VIEW = {
   bearing: 0,
 };
 
+const DEFAULT_ROUTE_COLOR = [34, 197, 94, 200];
+
 const DIFFICULTY_ROUTE_COLOR = {
   basic: [34, 197, 94, 200],
   moderate: [245, 158, 11, 200],
   complex: [239, 68, 68, 200],
 };
-
-function speedColor(speedKmh, selected) {
-  const s = Number(speedKmh) || 0;
-  if (selected) return [255, 255, 255, 255];
-  if (s <= 0) return [239, 68, 68, 240];
-  if (s <= 25) return [245, 158, 11, 240];
-  return [34, 197, 94, 240];
-}
 
 const ZONE_LABELS = {
   highway: 'Highway',
@@ -71,6 +65,24 @@ const ZONE_LEGEND_COLORS = {
   school_zone: 'bg-yellow-400',
   intersection: 'bg-red-500',
 };
+
+function speedColor(speedKmh, selected) {
+  const s = Number(speedKmh) || 0;
+  if (selected) return [255, 255, 255, 255];
+  if (s <= 0) return [239, 68, 68, 240];
+  if (s <= 25) return [245, 158, 11, 240];
+  return [34, 197, 94, 240];
+}
+
+function isValidCoord(lng, lat) {
+  return Number.isFinite(lng) && Number.isFinite(lat)
+    && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+
+function cleanPath(path) {
+  if (!Array.isArray(path)) return [];
+  return path.filter(([lng, lat]) => isValidCoord(Number(lng), Number(lat)));
+}
 
 function normalizePoint(raw) {
   return {
@@ -96,11 +108,25 @@ function normalizePoint(raw) {
   };
 }
 
+function normalizeViewState(vs) {
+  return {
+    longitude: Number(vs.longitude),
+    latitude: Number(vs.latitude),
+    zoom: Number(vs.zoom) || 14,
+    pitch: Number(vs.pitch) || 0,
+    bearing: Number(vs.bearing) || 0,
+  };
+}
+
 export default function FleetMap({
   data, selectedId, onSelect, manifest, replayPath = [], replayPoint = null,
 }) {
   const [viewState, setViewState] = useState(DEFAULT_VIEW);
   const [mapMode, setMapMode] = useState('satellite');
+
+  const handleViewStateChange = useCallback(({ viewState: vs }) => {
+    setViewState(normalizeViewState(vs));
+  }, []);
 
   const vehiclePositions = useMemo(() => {
     const latest = {};
@@ -116,63 +142,82 @@ export default function FleetMap({
         latest[normalized.vehicle_id] = normalized;
       }
     });
-    return Object.values(latest);
+    return Object.values(latest).filter((v) => isValidCoord(v.lng, v.lat));
   }, [data]);
 
   const selectedVehicle = vehiclePositions.find((v) => v.vehicle_id === selectedId);
   const selectedManifest = manifest?.find((m) => m.vehicle_id === selectedId);
 
   useEffect(() => {
-    if (selectedVehicle?.lat != null && selectedVehicle?.lng != null) {
-      setViewState((prev) => ({
-        ...prev,
-        longitude: selectedVehicle.lng,
-        latitude: selectedVehicle.lat,
-        zoom: Math.max(prev.zoom, 15),
-        transitionDuration: 800,
-      }));
-    }
-  }, [selectedId, selectedVehicle?.lat, selectedVehicle?.lng]);
+    const lng = selectedVehicle?.lng ?? selectedManifest?.pickup_lng;
+    const lat = selectedVehicle?.lat ?? selectedManifest?.pickup_lat;
+    if (!isValidCoord(Number(lng), Number(lat))) return;
+
+    setViewState((prev) => ({
+      ...prev,
+      longitude: Number(lng),
+      latitude: Number(lat),
+      zoom: Math.max(prev.zoom ?? 14, 15),
+    }));
+  }, [
+    selectedId,
+    selectedVehicle?.lat,
+    selectedVehicle?.lng,
+    selectedManifest?.pickup_lat,
+    selectedManifest?.pickup_lng,
+  ]);
+
+  const safeReplayPath = useMemo(
+    () => cleanPath(replayPath),
+    [replayPath],
+  );
 
   const layers = useMemo(() => {
     const result = [];
 
     if (selectedManifest?.route_zones_path?.length) {
-      selectedManifest.route_zones_path.forEach((segment, idx) => {
+      const zoneData = selectedManifest.route_zones_path
+        .map((segment) => ({ ...segment, path: cleanPath(segment.path) }))
+        .filter((segment) => segment.path.length >= 2);
+
+      if (zoneData.length) {
         result.push(
           new PathLayer({
-            id: `selected-route-zone-${idx}`,
-            data: [segment],
+            id: 'selected-route-zones',
+            data: zoneData,
             getPath: (d) => d.path,
-            getColor: (d) => d.color,
+            getColor: (d) => (Array.isArray(d.color) ? d.color : DEFAULT_ROUTE_COLOR),
             getWidth: 6,
             widthMinPixels: 4,
             capRounded: true,
             jointRounded: true,
           })
         );
-      });
+      }
     } else if (selectedManifest?.route_path?.length) {
-      const diff = selectedManifest.route_difficulty || 'basic';
-      result.push(
-        new PathLayer({
-          id: 'selected-route',
-          data: [{ path: selectedManifest.route_path }],
-          getPath: (d) => d.path,
-          getColor: DIFFICULTY_ROUTE_COLOR[diff] || DIFFICULTY_ROUTE_COLOR.basic,
-          getWidth: 5,
-          widthMinPixels: 4,
-          capRounded: true,
-          jointRounded: true,
-        })
-      );
+      const path = cleanPath(selectedManifest.route_path);
+      if (path.length >= 2) {
+        const diff = selectedManifest.route_difficulty || 'basic';
+        result.push(
+          new PathLayer({
+            id: 'selected-route',
+            data: [{ path }],
+            getPath: (d) => d.path,
+            getColor: DIFFICULTY_ROUTE_COLOR[diff] || DEFAULT_ROUTE_COLOR,
+            getWidth: 5,
+            widthMinPixels: 4,
+            capRounded: true,
+            jointRounded: true,
+          })
+        );
+      }
     }
 
-    if (replayPath?.length >= 2) {
+    if (safeReplayPath.length >= 2) {
       result.push(
         new PathLayer({
           id: 'replay-trail',
-          data: [{ path: replayPath }],
+          data: [{ path: safeReplayPath }],
           getPath: (d) => d.path,
           getColor: [168, 85, 247, 180],
           getWidth: 4,
@@ -183,7 +228,7 @@ export default function FleetMap({
       );
     }
 
-    if (replayPoint) {
+    if (replayPoint && isValidCoord(replayPoint.lng, replayPoint.lat)) {
       result.push(
         new ScatterplotLayer({
           id: 'replay-scrub-marker',
@@ -201,68 +246,77 @@ export default function FleetMap({
     }
 
     if (selectedManifest) {
+      const markers = [];
+      if (isValidCoord(selectedManifest.pickup_lng, selectedManifest.pickup_lat)) {
+        markers.push({
+          kind: 'pickup',
+          lng: selectedManifest.pickup_lng,
+          lat: selectedManifest.pickup_lat,
+          color: [34, 197, 94, 255],
+        });
+      }
+      if (isValidCoord(selectedManifest.destination_lng, selectedManifest.destination_lat)) {
+        markers.push({
+          kind: 'destination',
+          lng: selectedManifest.destination_lng,
+          lat: selectedManifest.destination_lat,
+          color: [239, 68, 68, 255],
+        });
+      }
+      if (markers.length) {
+        result.push(
+          new ScatterplotLayer({
+            id: 'trip-endpoints',
+            data: markers,
+            getPosition: (d) => [d.lng, d.lat],
+            getFillColor: (d) => d.color,
+            getRadius: 14,
+            radiusMinPixels: 10,
+            stroked: true,
+            getLineColor: [255, 255, 255, 255],
+            lineWidthMinPixels: 2,
+            pickable: false,
+          })
+        );
+      }
+    }
+
+    if (vehiclePositions.length) {
       result.push(
         new ScatterplotLayer({
-          id: 'pickup-marker',
-          data: [{ lng: selectedManifest.pickup_lng, lat: selectedManifest.pickup_lat }],
+          id: 'ground-vehicle-layer',
+          data: vehiclePositions,
           getPosition: (d) => [d.lng, d.lat],
-          getFillColor: [34, 197, 94, 255],
-          getRadius: 14,
-          radiusMinPixels: 10,
+          getFillColor: (d) => speedColor(d.speed_kmh, d.vehicle_id === selectedId),
+          getRadius: (d) => (d.vehicle_id === selectedId ? 16 : 12),
+          radiusMinPixels: 8,
+          radiusMaxPixels: 18,
           stroked: true,
-          getLineColor: [255, 255, 255, 255],
+          getLineColor: [0, 0, 0, 200],
           lineWidthMinPixels: 2,
-          pickable: false,
-        }),
-        new ScatterplotLayer({
-          id: 'destination-marker',
-          data: [{ lng: selectedManifest.destination_lng, lat: selectedManifest.destination_lat }],
-          getPosition: (d) => [d.lng, d.lat],
-          getFillColor: [239, 68, 68, 255],
-          getRadius: 14,
-          radiusMinPixels: 10,
-          stroked: true,
-          getLineColor: [255, 255, 255, 255],
-          lineWidthMinPixels: 2,
-          pickable: false,
+          pickable: true,
+          onClick: (info) => {
+            if (info.object?.vehicle_id) onSelect?.(info.object.vehicle_id);
+          },
+          updateTriggers: {
+            getFillColor: [selectedId],
+            getRadius: [selectedId],
+          },
         })
       );
     }
 
-    result.push(
-      new ScatterplotLayer({
-        id: 'ground-vehicle-layer',
-        data: vehiclePositions,
-        getPosition: (d) => [d.lng, d.lat],
-        getFillColor: (d) => speedColor(d.speed_kmh, d.vehicle_id === selectedId),
-        getRadius: (d) => (d.vehicle_id === selectedId ? 16 : 12),
-        radiusMinPixels: 8,
-        radiusMaxPixels: 18,
-        stroked: true,
-        getLineColor: [0, 0, 0, 200],
-        lineWidthMinPixels: 2,
-        pickable: true,
-        onClick: (info) => {
-          if (info.object) onSelect?.(info.object.vehicle_id);
-        },
-        updateTriggers: {
-          getFillColor: [selectedId, vehiclePositions.map((v) => v.speed_kmh).join(',')],
-          getPosition: vehiclePositions.map((v) => `${v.lng},${v.lat}`).join('|'),
-        },
-      })
-    );
-
     return result;
-  }, [vehiclePositions, selectedId, selectedManifest, onSelect, replayPath, replayPoint]);
+  }, [vehiclePositions, selectedId, selectedManifest, onSelect, safeReplayPath, replayPoint]);
 
   const mapStyle = mapMode === 'satellite' ? SATELLITE_STYLE : STREET_STYLE;
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full min-h-0 relative">
       <DeckGL
         viewState={viewState}
-        onViewStateChange={({ viewState: vs }) => setViewState(vs)}
-        controller={true}
+        onViewStateChange={handleViewStateChange}
+        controller
         layers={layers}
         getTooltip={({ object }) => {
           if (!object?.vehicle_id) return null;
@@ -270,15 +324,22 @@ export default function FleetMap({
           return `${object.vehicle_id}\n${object.speed_kmh} km/h · ${object.passenger_count ?? 0} pax${zone ? `\nZone: ${zone}` : ''}`;
         }}
         onClick={(info) => {
+          if (info.object?.vehicle_id) return;
           if (!info.object) onSelect?.(null);
         }}
       >
-        <MapLibreMap mapLib={maplibregl} mapStyle={mapStyle} />
+        <MapLibreMap
+          mapLib={maplibregl}
+          mapStyle={mapStyle}
+          reuseMaps
+          attributionControl={false}
+        />
       </DeckGL>
 
       <div className="absolute top-4 right-4 flex flex-col gap-2 items-end pointer-events-none">
         <div className="flex gap-1 pointer-events-auto">
           <button
+            type="button"
             onClick={() => setMapMode('satellite')}
             className={`px-3 py-1.5 text-xs rounded-l-lg border ${
               mapMode === 'satellite'
@@ -289,6 +350,7 @@ export default function FleetMap({
             Satellite
           </button>
           <button
+            type="button"
             onClick={() => setMapMode('street')}
             className={`px-3 py-1.5 text-xs rounded-r-lg border ${
               mapMode === 'street'

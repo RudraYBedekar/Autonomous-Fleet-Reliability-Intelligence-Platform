@@ -15,7 +15,7 @@ export default function AlertsPanel({ onSelectVehicle }) {
     const load = () => {
       fetch(apiUrl('/api/fleet/alerts'))
         .then((r) => r.json())
-        .then(setAlerts)
+        .then((data) => setAlerts(Array.isArray(data) ? data : []))
         .catch(() => {});
     };
     load();
