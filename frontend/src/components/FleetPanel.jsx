@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  MapPin, Navigation, Battery, HeartPulse, Gauge, User, Wrench, Users, Route,
+  MapPin, Navigation, Battery, HeartPulse, Gauge, User, Wrench, Users, Route, Clock, Activity,
 } from 'lucide-react';
 import MessageModal from './MessageModal';
 import VehicleContactActions from './VehicleContactActions';
+import AlertsPanel from './AlertsPanel';
+import ReplayScrubber from './ReplayScrubber';
 
 const GROUND_VEHICLE_PATTERN = /^car-\d{3}$/;
 
@@ -47,7 +49,25 @@ function speedLabel(speed) {
   return { text: `${speed} km/h`, cls: 'text-green-400' };
 }
 
-export default function FleetPanel({ fleetData, selectedId, onSelect, manifest }) {
+const TRIP_STATUS_LABEL = {
+  at_pickup: 'At pickup',
+  en_route: 'En route',
+  delayed: 'Delayed',
+  at_destination: 'At destination',
+  idle: 'Idle',
+};
+
+const TRIP_STATUS_STYLE = {
+  at_pickup: 'text-green-400',
+  en_route: 'text-brand-blue',
+  delayed: 'text-amber-400',
+  at_destination: 'text-purple-300',
+  idle: 'text-gray-400',
+};
+
+export default function FleetPanel({
+  fleetData, selectedId, onSelect, manifest, onReplayPath, onReplayPoint,
+}) {
   const [loading, setLoading] = useState(!manifest);
   const [messageVehicle, setMessageVehicle] = useState(null);
   const [toast, setToast] = useState(null);
@@ -118,6 +138,8 @@ export default function FleetPanel({ fleetData, selectedId, onSelect, manifest }
         <h1 className="text-lg font-bold text-white tracking-tight">Fleet Dispatch</h1>
         <p className="text-xs text-gray-500 mt-1">Redwood City, California · 15 local routes</p>
       </div>
+
+      <AlertsPanel onSelectVehicle={onSelect} />
 
       {selectedManifest && (
         <div className="p-4 border-b border-dark-700 bg-dark-800/60 space-y-3">
@@ -207,6 +229,24 @@ export default function FleetPanel({ fleetData, selectedId, onSelect, manifest }
             </div>
             <div className="glass-panel p-2">
               <div className="flex items-center gap-1 text-gray-500 mb-1">
+                <Clock size={11} /> ETA
+              </div>
+              <div className="text-gray-200">
+                {selectedLive?.eta_minutes != null
+                  ? `${selectedLive.eta_minutes.toFixed(0)} min`
+                  : '—'}
+              </div>
+            </div>
+            <div className="glass-panel p-2">
+              <div className="flex items-center gap-1 text-gray-500 mb-1">
+                <Activity size={11} /> Trip
+              </div>
+              <div className={TRIP_STATUS_STYLE[selectedLive?.trip_status] || 'text-gray-200'}>
+                {TRIP_STATUS_LABEL[selectedLive?.trip_status] || '—'}
+              </div>
+            </div>
+            <div className="glass-panel p-2">
+              <div className="flex items-center gap-1 text-gray-500 mb-1">
                 <HeartPulse size={11} /> Health
               </div>
               <div className={healthColor(selectedLive?.health_score ?? selectedManifest.health_score)}>
@@ -232,7 +272,38 @@ export default function FleetPanel({ fleetData, selectedId, onSelect, manifest }
                 </div>
               )}
             </div>
+            <div className="glass-panel p-2 col-span-2">
+              <div className="flex items-center justify-between text-gray-500 mb-1">
+                <span className="flex items-center gap-1 text-[10px]">
+                  <Wrench size={11} /> Maintenance RUL
+                </span>
+                <span className="text-gray-300 text-xs">
+                  {(selectedLive?.maintenance_rul_pct ?? 85).toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-dark-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    (selectedLive?.maintenance_rul_pct ?? 100) < 25 ? 'bg-red-500'
+                      : (selectedLive?.maintenance_rul_pct ?? 100) < 40 ? 'bg-amber-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${selectedLive?.maintenance_rul_pct ?? 85}%` }}
+                />
+              </div>
+              <div className="text-[10px] text-gray-500 mt-1">
+                Engine: {selectedManifest.engine_status}
+                {selectedLive?.active_alert && (
+                  <span className="block text-amber-400 mt-0.5">{selectedLive.active_alert}</span>
+                )}
+              </div>
+            </div>
           </div>
+
+          <ReplayScrubber
+            vehicleId={selectedManifest.vehicle_id}
+            onReplayPoint={onReplayPoint}
+            onPathLoaded={onReplayPath}
+          />
 
           <VehicleContactActions
             vehicle={selectedManifest}
@@ -314,6 +385,14 @@ export default function FleetPanel({ fleetData, selectedId, onSelect, manifest }
               <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-1.5">
                 <Route size={10} />
                 <span className="truncate">{vehicle.route_name}</span>
+                {live?.trip_status && (
+                  <span className={`shrink-0 ${TRIP_STATUS_STYLE[live.trip_status] || ''}`}>
+                    {TRIP_STATUS_LABEL[live.trip_status]}
+                  </span>
+                )}
+                {live?.eta_minutes != null && (
+                  <span className="text-gray-400 shrink-0">{live.eta_minutes.toFixed(0)}m ETA</span>
+                )}
                 <span className="flex items-center gap-0.5 text-purple-300 ml-auto shrink-0">
                   <Users size={9} /> {pax}
                 </span>

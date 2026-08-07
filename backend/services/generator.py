@@ -29,6 +29,8 @@ from backend.services.routes import (
     count_route_turns,
 )
 from backend.services.fleet_manifest import get_vehicle_manifest
+from backend.services.trip_insights import compute_eta_minutes, compute_trip_status, compute_maintenance_rul
+from backend.services.alerts import evaluate_alerts, push_alerts
 
 FLEET_SIZE = 15
 TICK_INTERVAL_S = 0.1  # 10 Hz
@@ -62,6 +64,9 @@ class _VehicleState:
     health_score: float = 95.0
     battery_pct: float = 90.0
     passenger_count: int = 0
+    idle_seconds: float = 0.0
+    distance_traveled_m: float = 0.0
+    baseline_maintenance_rul: float = 85.0
 
     def status(self) -> VehicleStatus:
         if self.idle_ticks_remaining > 0 or self.speed_kmh == 0:
@@ -90,6 +95,9 @@ class FleetGenerator:
             route = URBAN_ROUTES[route_idx]
             segs = segment_lengths(route)
             manifest = get_vehicle_manifest(_vehicle_id(i + 1))
+            baseline_rul = 100.0
+            if manifest:
+                baseline_rul = max(15.0, min(100.0, (manifest.maintenance_due_km / 35.0) * 10))
             seg_count = len(route) - 1
             start_seg = random.randint(0, max(0, seg_count - 1))
             self._vehicles.append(
@@ -106,6 +114,7 @@ class FleetGenerator:
                     health_score=manifest.health_score if manifest else random.uniform(85, 99),
                     battery_pct=manifest.battery_pct if manifest else random.uniform(60, 100),
                     passenger_count=manifest.passenger_count if manifest else random.randint(1, 4),
+                    baseline_maintenance_rul=baseline_rul,
                 )
             )
 
@@ -148,9 +157,15 @@ class FleetGenerator:
         if v.idle_ticks_remaining > 0:
             v.idle_ticks_remaining -= 1
             v.speed_kmh = 0.0
+            v.idle_seconds += TICK_INTERVAL_S
             v.approaching_intersection = False
             v.in_curve = False
             return
+
+        if v.speed_kmh < 1.0:
+            v.idle_seconds += TICK_INTERVAL_S
+        else:
+            v.idle_seconds = 0.0
 
         dist_to_turn, turn_angle = self._upcoming_turn_within_m(v)
         at_major_stop = (
@@ -193,6 +208,7 @@ class FleetGenerator:
             return interpolate(route, v.seg_idx, v.seg_progress)
 
         distance_m = (v.speed_kmh / 3.6) * TICK_INTERVAL_S
+        v.distance_traveled_m += distance_m
         remaining = distance_m
 
         while remaining > 0 and v.seg_idx < len(route) - 1:
@@ -225,6 +241,11 @@ class FleetGenerator:
             self._apply_physics(v)
             lat, lng = self._advance_position(v)
             self._update_health(v)
+            progress = self._trip_progress_pct(v)
+            eta = compute_eta_minutes(progress, v.route_total_m, v.speed_kmh)
+            trip_status = compute_trip_status(progress, v.speed_kmh, v.idle_seconds)
+            maintenance_rul = compute_maintenance_rul(v.baseline_maintenance_rul, v.distance_traveled_m)
+
             point = VehicleTelemetry(
                 vehicle_id=v.vehicle_id,
                 timestamp=now,
@@ -234,13 +255,26 @@ class FleetGenerator:
                 status=v.status(),
                 health_score=round(v.health_score, 1),
                 battery_pct=round(v.battery_pct, 1),
-                trip_progress_pct=round(self._trip_progress_pct(v), 1),
+                trip_progress_pct=round(progress, 1),
                 passenger_count=v.passenger_count,
                 route_difficulty=ROUTE_DIFFICULTIES[v.route_idx],
                 route_name=ROUTE_NAMES[v.route_idx],
                 road_zone=zone_at_segment(v.route_idx, v.seg_idx),
                 turn_count=count_route_turns(URBAN_ROUTES[v.route_idx]),
+                eta_minutes=eta,
+                trip_status=trip_status,
+                maintenance_rul_pct=round(maintenance_rul, 1),
             )
+
+            alerts = evaluate_alerts(point, idle_seconds=v.idle_seconds)
+            if alerts:
+                push_alerts(alerts)
+                top = max(alerts, key=lambda a: {"critical": 3, "warning": 2, "info": 1}[a.severity])
+                point = point.model_copy(update={
+                    "active_alert": top.message,
+                    "alert_severity": top.severity,
+                })
+
             payloads.append(point)
 
         return payloads

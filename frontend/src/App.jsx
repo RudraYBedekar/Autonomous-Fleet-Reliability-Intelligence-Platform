@@ -7,7 +7,17 @@ function App() {
   const [fleetData, setFleetData] = useState([]);
   const [manifest, setManifest] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [replayPath, setReplayPath] = useState([]);
+  const [replayPoint, setReplayPoint] = useState(null);
   const liveRef = useRef(new globalThis.Map());
+
+  const handleReplayPath = useCallback((path) => {
+    setReplayPath(path);
+  }, []);
+
+  const handleReplayPoint = useCallback((point) => {
+    setReplayPoint(point);
+  }, []);
 
   const flushLive = useCallback(() => {
     setFleetData(Array.from(liveRef.current.values()));
@@ -55,6 +65,8 @@ function App() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         manifest={manifest}
+        onReplayPath={handleReplayPath}
+        onReplayPoint={handleReplayPoint}
       />
       <main className="flex-1 min-w-0">
         <FleetMap
@@ -62,6 +74,8 @@ function App() {
           selectedId={selectedId}
           onSelect={setSelectedId}
           manifest={manifest}
+          replayPath={replayPath}
+          replayPoint={replayPoint}
         />
       </main>
     </div>

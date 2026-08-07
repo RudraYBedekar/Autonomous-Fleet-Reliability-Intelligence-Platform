@@ -14,6 +14,8 @@ URBAN_LNG_MAX = -122.214
 VehicleStatus = Literal["idle", "moving", "decelerating", "accelerating"]
 RouteDifficulty = Literal["basic", "moderate", "complex"]
 RoadZone = Literal["highway", "arterial", "residential", "school_zone", "intersection"]
+TripStatus = Literal["at_pickup", "en_route", "delayed", "at_destination", "idle"]
+AlertSeverity = Literal["info", "warning", "critical"]
 
 
 class VehicleTelemetry(BaseModel):
@@ -31,6 +33,11 @@ class VehicleTelemetry(BaseModel):
     route_name: str = ""
     road_zone: RoadZone = "residential"
     turn_count: int = Field(default=0, ge=0, le=200)
+    eta_minutes: float | None = Field(default=None, ge=0.0, le=600.0)
+    trip_status: TripStatus = "en_route"
+    maintenance_rul_pct: float = Field(default=100.0, ge=0.0, le=100.0)
+    active_alert: str | None = None
+    alert_severity: AlertSeverity | None = None
 
     @field_validator("vehicle_id")
     @classmethod

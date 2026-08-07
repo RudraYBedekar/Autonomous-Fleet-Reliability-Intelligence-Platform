@@ -4,6 +4,8 @@ from fastapi import APIRouter, HTTPException
 
 from backend.schemas.dispatch import DispatchActionResponse, PassengerMessageRequest
 from backend.services.dispatch import get_dispatch_log, initiate_call, send_passenger_message
+from backend.services.alerts import get_active_alerts
+from backend.services.telemetry_store import get_history
 from backend.services.fleet_manifest import get_fleet_manifest, get_vehicle_manifest
 
 router = APIRouter(prefix="/api/fleet", tags=["Fleet"])
@@ -21,6 +23,20 @@ def vehicle_manifest(vehicle_id: str):
     if not manifest:
         raise HTTPException(status_code=404, detail="Vehicle not found")
     return manifest.to_dict()
+
+
+@router.get("/alerts")
+def fleet_alerts(limit: int = 30):
+    """Active rule-based alerts across the fleet."""
+    return get_active_alerts(limit)
+
+
+@router.get("/{vehicle_id}/history")
+def vehicle_history(vehicle_id: str, minutes: float = 5.0):
+    if not get_vehicle_manifest(vehicle_id):
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    points = get_history(vehicle_id, minutes=min(minutes, 5.0))
+    return {"vehicle_id": vehicle_id, "minutes": minutes, "points": points}
 
 
 @router.post("/{vehicle_id}/call", response_model=DispatchActionResponse)

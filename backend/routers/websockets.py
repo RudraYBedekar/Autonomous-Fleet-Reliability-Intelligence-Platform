@@ -60,8 +60,11 @@ def validate_and_serialize(raw: dict | str) -> str | None:
 
 async def publish_telemetry(point: VehicleTelemetry) -> None:
     """Validated publish path used by the in-process generator."""
+    from backend.services.telemetry_store import record
+
     payload = validate_and_serialize(point.model_dump(mode="json"))
     if payload:
+        record(point)
         await manager.broadcast(payload)
 
 

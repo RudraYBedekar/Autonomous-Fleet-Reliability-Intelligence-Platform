@@ -88,10 +88,17 @@ function normalizePoint(raw) {
     route_name: raw.route_name,
     road_zone: raw.road_zone,
     turn_count: raw.turn_count,
+    eta_minutes: raw.eta_minutes,
+    trip_status: raw.trip_status,
+    maintenance_rul_pct: raw.maintenance_rul_pct,
+    active_alert: raw.active_alert,
+    alert_severity: raw.alert_severity,
   };
 }
 
-export default function FleetMap({ data, selectedId, onSelect, manifest }) {
+export default function FleetMap({
+  data, selectedId, onSelect, manifest, replayPath = [], replayPoint = null,
+}) {
   const [viewState, setViewState] = useState(DEFAULT_VIEW);
   const [mapMode, setMapMode] = useState('satellite');
 
@@ -161,6 +168,38 @@ export default function FleetMap({ data, selectedId, onSelect, manifest }) {
       );
     }
 
+    if (replayPath?.length >= 2) {
+      result.push(
+        new PathLayer({
+          id: 'replay-trail',
+          data: [{ path: replayPath }],
+          getPath: (d) => d.path,
+          getColor: [168, 85, 247, 180],
+          getWidth: 4,
+          widthMinPixels: 3,
+          capRounded: true,
+          jointRounded: true,
+        })
+      );
+    }
+
+    if (replayPoint) {
+      result.push(
+        new ScatterplotLayer({
+          id: 'replay-scrub-marker',
+          data: [{ lng: replayPoint.lng, lat: replayPoint.lat }],
+          getPosition: (d) => [d.lng, d.lat],
+          getFillColor: [168, 85, 247, 255],
+          getRadius: 18,
+          radiusMinPixels: 12,
+          stroked: true,
+          getLineColor: [255, 255, 255, 255],
+          lineWidthMinPixels: 2,
+          pickable: false,
+        })
+      );
+    }
+
     if (selectedManifest) {
       result.push(
         new ScatterplotLayer({
@@ -214,7 +253,7 @@ export default function FleetMap({ data, selectedId, onSelect, manifest }) {
     );
 
     return result;
-  }, [vehiclePositions, selectedId, selectedManifest, onSelect]);
+  }, [vehiclePositions, selectedId, selectedManifest, onSelect, replayPath, replayPoint]);
 
   const mapStyle = mapMode === 'satellite' ? SATELLITE_STYLE : STREET_STYLE;
 
