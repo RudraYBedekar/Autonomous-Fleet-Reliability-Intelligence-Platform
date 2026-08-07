@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import FleetPanel from './components/FleetPanel';
 import FleetMap from './components/Map';
+import { apiUrl, wsTelemetryUrl } from './api';
 
 function App() {
   const [fleetData, setFleetData] = useState([]);
@@ -18,7 +19,7 @@ function App() {
     let flushTimer;
 
     const connect = () => {
-      ws = new WebSocket('ws://127.0.0.1:8000/ws/telemetry');
+      ws = new WebSocket(wsTelemetryUrl());
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -41,7 +42,7 @@ function App() {
   }, [flushLive]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/fleet/manifest')
+    fetch(apiUrl('/api/fleet/manifest'))
       .then((res) => res.json())
       .then(setManifest)
       .catch((err) => console.error('Failed to load fleet manifest', err));

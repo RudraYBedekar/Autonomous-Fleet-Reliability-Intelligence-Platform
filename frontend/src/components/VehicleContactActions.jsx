@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { MessageSquare, Phone } from 'lucide-react';
-
-const API_BASE = 'http://127.0.0.1:8000';
+import { apiUrl } from '../api';
 
 function phoneHref(phone) {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
@@ -20,7 +19,7 @@ export default function VehicleContactActions({
     if (calling) return;
     setCalling(true);
     try {
-      const res = await fetch(`${API_BASE}/api/fleet/${vehicle.vehicle_id}/call`, {
+      const res = await fetch(apiUrl(`/api/fleet/${vehicle.vehicle_id}/call`), {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Call failed');

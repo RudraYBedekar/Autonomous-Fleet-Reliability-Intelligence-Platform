@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageSquare, Send, X } from 'lucide-react';
-
-const API_BASE = 'http://127.0.0.1:8000';
+import { apiUrl } from '../api';
 
 export default function MessageModal({ vehicle, open, onClose, onSent }) {
   const [message, setMessage] = useState('');
@@ -27,7 +26,7 @@ export default function MessageModal({ vehicle, open, onClose, onSent }) {
     setSending(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/api/fleet/${vehicle.vehicle_id}/message`, {
+      const res = await fetch(apiUrl(`/api/fleet/${vehicle.vehicle_id}/message`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
