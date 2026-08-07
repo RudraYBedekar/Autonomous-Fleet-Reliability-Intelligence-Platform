@@ -7,6 +7,7 @@ from backend.services.dispatch import get_dispatch_log, initiate_call, send_pass
 from backend.services.alerts import get_active_alerts
 from backend.services.telemetry_store import get_history
 from backend.services.fleet_manifest import get_fleet_manifest, get_vehicle_manifest
+from backend.services.charging_stations import all_stations
 
 router = APIRouter(prefix="/api/fleet", tags=["Fleet"])
 
@@ -29,6 +30,12 @@ def vehicle_manifest(vehicle_id: str):
 def fleet_alerts(limit: int = 30):
     """Active rule-based alerts across the fleet."""
     return get_active_alerts(limit)
+
+
+@router.get("/charging-stations")
+def charging_stations():
+    """EV charging stations available for automatic low-battery routing."""
+    return all_stations()
 
 
 @router.get("/{vehicle_id}/history")

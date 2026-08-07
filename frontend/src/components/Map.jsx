@@ -66,6 +66,8 @@ const ZONE_LEGEND_COLORS = {
   intersection: 'bg-red-500',
 };
 
+const CHARGE_ROUTE_COLOR = [250, 204, 21, 220];
+
 function speedColor(speedKmh, selected) {
   const s = Number(speedKmh) || 0;
   if (selected) return [255, 255, 255, 255];
@@ -105,6 +107,12 @@ function normalizePoint(raw) {
     maintenance_rul_pct: raw.maintenance_rul_pct,
     active_alert: raw.active_alert,
     alert_severity: raw.alert_severity,
+    vehicle_type: raw.vehicle_type,
+    navigation_mode: raw.navigation_mode,
+    destination_address: raw.destination_address,
+    route_path_live: raw.route_path_live,
+    charger_station_id: raw.charger_station_id,
+    charger_station_name: raw.charger_station_name,
   };
 }
 
@@ -119,7 +127,8 @@ function normalizeViewState(vs) {
 }
 
 export default function FleetMap({
-  data, selectedId, onSelect, manifest, replayPath = [], replayPoint = null,
+  data, selectedId, onSelect, manifest, chargingStations = [],
+  replayPath = [], replayPoint = null,
 }) {
   const [viewState, setViewState] = useState(DEFAULT_VIEW);
   const [mapMode, setMapMode] = useState('satellite');
@@ -174,8 +183,40 @@ export default function FleetMap({
 
   const layers = useMemo(() => {
     const result = [];
+    const liveRoute = cleanPath(selectedVehicle?.route_path_live);
+    const isEvDetour = selectedVehicle?.navigation_mode === 'emergency_charge';
 
-    if (selectedManifest?.route_zones_path?.length) {
+    if (chargingStations.length) {
+      result.push(
+        new ScatterplotLayer({
+          id: 'charging-stations',
+          data: chargingStations.filter((s) => isValidCoord(s.lng, s.lat)),
+          getPosition: (d) => [d.lng, d.lat],
+          getFillColor: [250, 204, 21, 230],
+          getRadius: 12,
+          radiusMinPixels: 8,
+          stroked: true,
+          getLineColor: [0, 0, 0, 180],
+          lineWidthMinPixels: 2,
+          pickable: false,
+        })
+      );
+    }
+
+    if (liveRoute.length >= 2) {
+      result.push(
+        new PathLayer({
+          id: 'selected-live-route',
+          data: [{ path: liveRoute }],
+          getPath: (d) => d.path,
+          getColor: CHARGE_ROUTE_COLOR,
+          getWidth: 7,
+          widthMinPixels: 5,
+          capRounded: true,
+          jointRounded: true,
+        })
+      );
+    } else if (selectedManifest?.route_zones_path?.length && !isEvDetour) {
       const zoneData = selectedManifest.route_zones_path
         .map((segment) => ({ ...segment, path: cleanPath(segment.path) }))
         .filter((segment) => segment.path.length >= 2);
@@ -194,7 +235,7 @@ export default function FleetMap({
           })
         );
       }
-    } else if (selectedManifest?.route_path?.length) {
+    } else if (selectedManifest?.route_path?.length && !isEvDetour) {
       const path = cleanPath(selectedManifest.route_path);
       if (path.length >= 2) {
         const diff = selectedManifest.route_difficulty || 'basic';
@@ -247,7 +288,9 @@ export default function FleetMap({
 
     if (selectedManifest) {
       const markers = [];
-      if (isValidCoord(selectedManifest.pickup_lng, selectedManifest.pickup_lat)) {
+      const routingToCharger = isEvDetour;
+
+      if (!routingToCharger && isValidCoord(selectedManifest.pickup_lng, selectedManifest.pickup_lat)) {
         markers.push({
           kind: 'pickup',
           lng: selectedManifest.pickup_lng,
@@ -255,7 +298,19 @@ export default function FleetMap({
           color: [34, 197, 94, 255],
         });
       }
-      if (isValidCoord(selectedManifest.destination_lng, selectedManifest.destination_lat)) {
+      if (routingToCharger && selectedVehicle?.charger_station_name) {
+        const station = chargingStations.find((s) => s.station_id === selectedVehicle.charger_station_id);
+        const lng = station?.lng ?? selectedManifest.destination_lng;
+        const lat = station?.lat ?? selectedManifest.destination_lat;
+        if (isValidCoord(lng, lat)) {
+          markers.push({
+            kind: 'charger',
+            lng,
+            lat,
+            color: [250, 204, 21, 255],
+          });
+        }
+      } else if (isValidCoord(selectedManifest.destination_lng, selectedManifest.destination_lat)) {
         markers.push({
           kind: 'destination',
           lng: selectedManifest.destination_lng,
@@ -307,7 +362,7 @@ export default function FleetMap({
     }
 
     return result;
-  }, [vehiclePositions, selectedId, selectedManifest, onSelect, safeReplayPath, replayPoint]);
+  }, [vehiclePositions, selectedId, selectedManifest, selectedVehicle, onSelect, safeReplayPath, replayPoint, chargingStations]);
 
   const mapStyle = mapMode === 'satellite' ? SATELLITE_STYLE : STREET_STYLE;
 
@@ -321,7 +376,8 @@ export default function FleetMap({
         getTooltip={({ object }) => {
           if (!object?.vehicle_id) return null;
           const zone = object.road_zone ? ZONE_LABELS[object.road_zone] || object.road_zone : '';
-          return `${object.vehicle_id}\n${object.speed_kmh} km/h · ${object.passenger_count ?? 0} pax${zone ? `\nZone: ${zone}` : ''}`;
+          const battery = object.battery_pct != null ? `\nBattery: ${object.battery_pct}%` : '';
+          return `${object.vehicle_id} (EV)\n${object.speed_kmh} km/h · ${object.passenger_count ?? 0} pax${battery}${zone ? `\nZone: ${zone}` : ''}`;
         }}
         onClick={(info) => {
           if (info.object?.vehicle_id) return;
@@ -363,7 +419,10 @@ export default function FleetMap({
         </div>
 
         <div className="bg-black/70 backdrop-blur px-3 py-2 rounded shadow text-xs text-gray-200 space-y-1">
-          <div className="font-medium text-white">{vehiclePositions.length} cars · Redwood City</div>
+          <div className="font-medium text-white">{vehiclePositions.length} EVs · Redwood City</div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /> Charger / low-battery route
+          </div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Stopped
           </div>
@@ -375,7 +434,13 @@ export default function FleetMap({
           </div>
           {selectedManifest && (
             <div className="pt-1 border-t border-gray-600 text-gray-400 space-y-1">
-              <div>Route: {selectedManifest.route_name}</div>
+              <div>Route: {selectedVehicle?.route_name || selectedManifest.route_name}</div>
+              {selectedVehicle?.trip_status === 'routing_to_charger' && (
+                <div className="text-yellow-300">Auto-routing to charger (&lt;15% battery)</div>
+              )}
+              {selectedVehicle?.trip_status === 'charging' && (
+                <div className="text-yellow-300">Charging @ {selectedVehicle.charger_station_name || 'station'}</div>
+              )}
               {selectedVehicle?.road_zone && (
                 <div>Zone: {ZONE_LABELS[selectedVehicle.road_zone] || selectedVehicle.road_zone}</div>
               )}

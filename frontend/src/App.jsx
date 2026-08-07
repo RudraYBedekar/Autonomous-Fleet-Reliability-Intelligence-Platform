@@ -7,6 +7,7 @@ import { apiUrl, wsTelemetryUrl } from './api';
 function App() {
   const [fleetData, setFleetData] = useState([]);
   const [manifest, setManifest] = useState(null);
+  const [chargingStations, setChargingStations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [replayPath, setReplayPath] = useState([]);
   const [replayPoint, setReplayPoint] = useState(null);
@@ -63,6 +64,11 @@ function App() {
       .then((res) => res.json())
       .then(setManifest)
       .catch((err) => console.error('Failed to load fleet manifest', err));
+
+    fetch(apiUrl('/api/fleet/charging-stations'))
+      .then((res) => res.json())
+      .then((data) => setChargingStations(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Failed to load charging stations', err));
   }, []);
 
   return (
@@ -84,6 +90,7 @@ function App() {
             selectedId={selectedId}
             onSelect={handleSelect}
             manifest={manifest}
+            chargingStations={chargingStations}
             replayPath={replayPath}
             replayPoint={replayPoint}
           />

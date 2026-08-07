@@ -104,6 +104,8 @@ class VehicleManifest:
             "maintenance_due_km": round(self.maintenance_due_km, 1),
             "driver_name": self.driver_name,
             "driver_phone": self.driver_phone,
+            "vehicle_type": "electric",
+            "powertrain": "BEV",
             "route_features": self.route_features,
             "turn_count": self.turn_count,
             "route_zones_path": route_path_by_zone(self.route_idx),

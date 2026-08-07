@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  MapPin, Navigation, Battery, HeartPulse, Gauge, User, Wrench, Users, Route, Clock, Activity,
+  MapPin, Navigation, Battery, HeartPulse, Gauge, User, Wrench, Users, Route, Clock, Activity, Zap,
 } from 'lucide-react';
 import MessageModal from './MessageModal';
 import VehicleContactActions from './VehicleContactActions';
@@ -56,6 +56,8 @@ const TRIP_STATUS_LABEL = {
   delayed: 'Delayed',
   at_destination: 'At destination',
   idle: 'Idle',
+  routing_to_charger: 'Routing to charger',
+  charging: 'Charging',
 };
 
 const TRIP_STATUS_STYLE = {
@@ -64,7 +66,16 @@ const TRIP_STATUS_STYLE = {
   delayed: 'text-amber-400',
   at_destination: 'text-purple-300',
   idle: 'text-gray-400',
+  routing_to_charger: 'text-yellow-300',
+  charging: 'text-yellow-300',
 };
+
+function batteryTextColor(pct) {
+  const b = Number(pct) || 0;
+  if (b < 15) return 'text-red-400';
+  if (b < 25) return 'text-amber-400';
+  return 'text-gray-200';
+}
 
 export default function FleetPanel({
   fleetData, selectedId, onSelect, manifest, onReplayPath, onReplayPoint,
@@ -136,8 +147,11 @@ export default function FleetPanel({
   return (
     <aside className="w-[360px] shrink-0 bg-dark-900 border-r border-dark-700 flex flex-col h-full">
       <div className="p-4 border-b border-dark-700">
-        <h1 className="text-lg font-bold text-white tracking-tight">Fleet Dispatch</h1>
-        <p className="text-xs text-gray-500 mt-1">Redwood City, California · 15 local routes</p>
+        <h1 className="text-lg font-bold text-white tracking-tight">Electric Fleet Dispatch</h1>
+        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+          <Zap size={11} className="text-yellow-400" />
+          Redwood City BEV fleet · auto-charge below 15%
+        </p>
       </div>
 
       <AlertsPanel onSelectVehicle={onSelect} />
@@ -171,11 +185,30 @@ export default function FleetPanel({
                 {selectedManifest.turn_count} turns
               </span>
             )}
+            <span className="text-[9px] px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 uppercase tracking-wide flex items-center gap-1">
+              <Zap size={9} /> BEV
+            </span>
             <span className="text-[9px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 uppercase tracking-wide flex items-center gap-1">
               <Users size={9} />
               {(selectedLive?.passenger_count ?? selectedManifest.passenger_count)} passengers
             </span>
           </div>
+
+          {(selectedLive?.trip_status === 'routing_to_charger' || selectedLive?.trip_status === 'charging') && (
+            <div className="glass-panel p-2 text-xs border border-yellow-500/30 bg-yellow-500/10">
+              <div className="flex items-center gap-1.5 text-yellow-300 font-medium mb-1">
+                <Zap size={12} />
+                {selectedLive.trip_status === 'charging' ? 'Charging in progress' : 'Low battery — rerouting to charger'}
+              </div>
+              <div className="text-gray-300 leading-snug">
+                {selectedLive.destination_address || selectedLive.charger_station_name || 'Nearest EV station'}
+              </div>
+              <div className={`mt-1 ${batteryTextColor(selectedLive.battery_pct)}`}>
+                Battery: {fmtNum(selectedLive.battery_pct, 1)}%
+                {Number(selectedLive.battery_pct) < 15 && ' — critical threshold triggered auto-route'}
+              </div>
+            </div>
+          )}
 
           {selectedManifest.route_features?.length > 0 && (
             <div className="flex flex-wrap gap-1">
@@ -258,7 +291,7 @@ export default function FleetPanel({
               <div className="flex items-center gap-1 text-gray-500 mb-1">
                 <Battery size={11} /> Battery
               </div>
-              <div className="text-gray-200">
+              <div className={batteryTextColor(selectedLive?.battery_pct ?? selectedManifest.battery_pct)}>
                 {fmtNum(selectedLive?.battery_pct ?? selectedManifest.battery_pct, 1, '—')}%
               </div>
             </div>

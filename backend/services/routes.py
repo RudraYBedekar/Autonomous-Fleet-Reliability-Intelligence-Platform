@@ -184,6 +184,21 @@ def interpolate(route: Sequence[tuple[float, float]], seg_idx: int, progress: fl
     return lat1 + (lat2 - lat1) * progress, lng1 + (lng2 - lng1) * progress
 
 
+def build_direct_route(
+    from_lat: float,
+    from_lng: float,
+    to_lat: float,
+    to_lng: float,
+    step_m: float = 12.0,
+) -> list[tuple[float, float]]:
+    """Street-style direct path between two points (densified for simulation)."""
+    return densify_route([(from_lat, from_lng), (to_lat, to_lng)], step_m=step_m)
+
+
+def route_path_lng_lat(route: Sequence[tuple[float, float]]) -> list[list[float]]:
+    return [[pt[1], pt[0]] for pt in route]
+
+
 def route_path_by_zone(route_index: int) -> list[dict]:
     """Colored path segments for map rendering."""
     route = URBAN_ROUTES[route_index]

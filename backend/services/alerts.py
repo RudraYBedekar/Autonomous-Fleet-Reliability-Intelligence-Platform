@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from backend.schemas.telemetry import VehicleTelemetry
+from backend.services.charging_stations import BATTERY_CRITICAL_PCT
 
 SCHOOL_ZONE_SPEED_LIMIT = 25.0
 
@@ -40,10 +41,14 @@ def evaluate_alerts(
     alerts: list[FleetAlert] = []
     ts = point.timestamp if point.timestamp.tzinfo else point.timestamp.replace(tzinfo=timezone.utc)
 
-    if point.battery_pct < 15:
+    if point.battery_pct < BATTERY_CRITICAL_PCT:
+        msg = f"{point.vehicle_id} battery critical ({point.battery_pct:.0f}%) — auto-routing to charger"
+        if point.trip_status == "routing_to_charger" and point.charger_station_name:
+            msg = f"{point.vehicle_id} low battery — routing to {point.charger_station_name}"
+        elif point.trip_status == "charging" and point.charger_station_name:
+            msg = f"{point.vehicle_id} charging at {point.charger_station_name} ({point.battery_pct:.0f}%)"
         alerts.append(FleetAlert(
-            point.vehicle_id, "critical", "battery_critical",
-            f"{point.vehicle_id} battery critical ({point.battery_pct:.0f}%)", ts,
+            point.vehicle_id, "critical", "battery_critical", msg, ts,
         ))
     elif point.battery_pct < 25:
         alerts.append(FleetAlert(

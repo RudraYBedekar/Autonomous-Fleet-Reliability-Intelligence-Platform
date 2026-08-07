@@ -12,9 +12,14 @@ URBAN_LNG_MIN = -122.255
 URBAN_LNG_MAX = -122.214
 
 VehicleStatus = Literal["idle", "moving", "decelerating", "accelerating"]
+VehicleType = Literal["electric"]
+NavigationMode = Literal["passenger_trip", "emergency_charge"]
 RouteDifficulty = Literal["basic", "moderate", "complex"]
 RoadZone = Literal["highway", "arterial", "residential", "school_zone", "intersection"]
-TripStatus = Literal["at_pickup", "en_route", "delayed", "at_destination", "idle"]
+TripStatus = Literal[
+    "at_pickup", "en_route", "delayed", "at_destination", "idle",
+    "routing_to_charger", "charging",
+]
 AlertSeverity = Literal["info", "warning", "critical"]
 
 
@@ -29,6 +34,7 @@ class VehicleTelemetry(BaseModel):
     battery_pct: float = Field(default=100.0, ge=0.0, le=100.0)
     trip_progress_pct: float = Field(default=0.0, ge=0.0, le=100.0)
     passenger_count: int = Field(default=0, ge=0, le=6)
+    vehicle_type: VehicleType = "electric"
     route_difficulty: RouteDifficulty = "basic"
     route_name: str = ""
     road_zone: RoadZone = "residential"
@@ -36,6 +42,11 @@ class VehicleTelemetry(BaseModel):
     eta_minutes: float | None = Field(default=None, ge=0.0, le=600.0)
     trip_status: TripStatus = "en_route"
     maintenance_rul_pct: float = Field(default=100.0, ge=0.0, le=100.0)
+    navigation_mode: NavigationMode = "passenger_trip"
+    destination_address: str | None = None
+    route_path_live: list[list[float]] | None = None
+    charger_station_id: str | None = None
+    charger_station_name: str | None = None
     active_alert: str | None = None
     alert_severity: AlertSeverity | None = None
 
