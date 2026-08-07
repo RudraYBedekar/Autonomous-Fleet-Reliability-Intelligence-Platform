@@ -314,8 +314,8 @@ export default function FleetMap({
           {selectedManifest && (
             <div className="pt-1 border-t border-gray-600 text-gray-400 space-y-1">
               <div>Route: {selectedManifest.route_name}</div>
-              {selectedLive?.road_zone && (
-                <div>Zone: {ZONE_LABELS[selectedLive.road_zone] || selectedLive.road_zone}</div>
+              {selectedVehicle?.road_zone && (
+                <div>Zone: {ZONE_LABELS[selectedVehicle.road_zone] || selectedVehicle.road_zone}</div>
               )}
               {selectedManifest.turn_count != null && (
                 <div>{selectedManifest.turn_count} turns on route</div>
