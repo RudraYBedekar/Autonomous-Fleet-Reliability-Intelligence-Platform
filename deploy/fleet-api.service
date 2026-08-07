@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/Autonomous-Fleet-Reliability-Intelligence-Platform
-Environment="PATH=/home/ubuntu/Autonomous-Fleet-Reliability-Intelligence-Platform/venv/bin"
-ExecStart=/home/ubuntu/Autonomous-Fleet-Reliability-Intelligence-Platform/venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=@REPO_ROOT@
+Environment="PATH=@REPO_ROOT@/venv/bin"
+ExecStart=@REPO_ROOT@/venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
 
