@@ -5,7 +5,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 # Region from env or default to us-east-1
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-opus-4-6")
 
 def get_bedrock_client():
     """Initializes Bedrock client using IAM Role or local AWS credentials."""
