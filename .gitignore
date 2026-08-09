@@ -26,6 +26,8 @@ infrastructure/kafka/logs/
 # Data
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 *.csv
 exported_telemetry.csv
 telemetry_data.csv
