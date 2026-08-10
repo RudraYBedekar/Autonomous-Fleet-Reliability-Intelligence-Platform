@@ -11,19 +11,19 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-PRIMARY_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
+PRIMARY_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-opus-4-6-v1")
 
-# Prioritized list of active Bedrock models across providers
+# Active Bedrock model IDs verified directly from account listing
 MODEL_CANDIDATES = [
     PRIMARY_MODEL_ID,
-    "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-    "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-    "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "anthropic.claude-opus-4-6-v1",
+    "anthropic.claude-sonnet-4-6",
+    "anthropic.claude-haiku-4-5-20251001-v1:0",
     "amazon.nova-lite-v1:0",
+    "amazon.nova-pro-v1:0",
     "amazon.nova-micro-v1:0",
-    "amazon.titan-text-express-v1",
-    "us.anthropic.claude-3-opus-20240229-v1:0",
-    "meta.llama3-2-3b-instruct-v1:0",
+    "meta.llama3-3-70b-instruct-v1:0",
+    "meta.llama3-8b-instruct-v1:0",
 ]
 
 
