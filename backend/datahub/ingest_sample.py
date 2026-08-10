@@ -68,21 +68,22 @@ def ingest_fleet_metadata() -> None:
 
     # SchemaMetadata aspect
     try:
+        OtherSchemaClass = getattr(schema_mod, "OtherSchemaClass")
         schema_mcp = MetadataChangeProposalWrapper(
             entityType="dataset",
             entityUrn="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
             aspect=SchemaMetadataClass(
                 schemaName="VehicleHealthFeatures",
                 platform="urn:li:dataPlatform:kafka",
-                version=1,
+                version=0,
                 hash="",
-                platformSchema={},
+                platformSchema=OtherSchemaClass(rawSchema=""),
                 fields=[
-                    SchemaFieldClass(fieldPath="battery_pct", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="HV battery state of charge %"),
-                    SchemaFieldClass(fieldPath="battery_temperature", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Battery pack temperature in Celsius"),
-                    SchemaFieldClass(fieldPath="vibration_hz", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="LiDAR mount vibration frequency"),
-                    SchemaFieldClass(fieldPath="health_score", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Composite vehicle health index"),
-                    SchemaFieldClass(fieldPath="maintenance_rul_pct", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Predicted Remaining Useful Life %"),
+                    SchemaFieldClass(fieldPath="battery_pct", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="HV battery state of charge %"),
+                    SchemaFieldClass(fieldPath="battery_temperature", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Battery pack temperature in Celsius"),
+                    SchemaFieldClass(fieldPath="vibration_hz", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="LiDAR mount vibration frequency"),
+                    SchemaFieldClass(fieldPath="health_score", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Composite vehicle health index"),
+                    SchemaFieldClass(fieldPath="maintenance_rul_pct", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Predicted Remaining Useful Life %"),
                 ],
             ),
         )
