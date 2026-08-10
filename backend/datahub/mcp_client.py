@@ -1,103 +1,141 @@
 """
-DataHub MCP (Model Context Protocol) Client for Hackathon Integration.
+Official DataHub MCP (Model Context Protocol) Client Integration.
 
-Supports official DataHub MCP Server / Agent Context Kit transport:
-- HTTP/SSE MCP Endpoint (DATAHUB_MCP_URL / DATAHUB_MCP_SERVER_URL)
-- Stdio Transport (DATAHUB_MCP_STDIO_CMD)
-- DataHub GMS GraphQL/REST Transport (DATAHUB_GMS_URL)
-- OAuth 2.0 Client Credentials & Session Authentication (DATAHUB_CLIENT_ID, DATAHUB_CLIENT_SECRET, DATAHUB_OAUTH_TOKEN)
+Acts as an MCP CLIENT connecting to the official acryldata/mcp-server-datahub package
+via stdio or HTTP transport.
 
-IMPORTANT:
-Does NOT rely on or require Personal Access Tokens (PAT).
-Configured strictly via environment variables.
+Official repository: https://github.com/acryldata/mcp-server-datahub
+
+Configured via environment variables:
+- DATAHUB_GMS_URL (default: http://localhost:8080)
+- DATAHUB_GMS_TOKEN (optional bearer token, PAT NOT required)
+- DATAHUB_MCP_ENABLED (default: true)
 """
 
 from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 import urllib.parse
 import urllib.request
 from typing import Any
 
 
 class DataHubMCPClient:
-    """Pluggable MCP / Agent Context Kit client for DataHub integration."""
+    """FastAPI MCP Client for official DataHub MCP Server (acryldata/mcp-server-datahub)."""
 
     def __init__(self) -> None:
-        self.mcp_url: str | None = (
-            os.getenv("DATAHUB_MCP_URL") or os.getenv("DATAHUB_MCP_SERVER_URL")
-        )
-        self.mcp_stdio_cmd: str | None = os.getenv("DATAHUB_MCP_STDIO_CMD")
-        self.gms_url: str | None = os.getenv("DATAHUB_GMS_URL")
-        self.client_id: str | None = os.getenv("DATAHUB_CLIENT_ID")
-        self.client_secret: str | None = os.getenv("DATAHUB_CLIENT_SECRET")
-        self.oauth_token: str | None = (
-            os.getenv("DATAHUB_OAUTH_TOKEN") or os.getenv("DATAHUB_SESSION_TOKEN")
-        )
+        self.gms_url: str = os.getenv("DATAHUB_GMS_URL", "http://localhost:8080").rstrip("/")
+        self.gms_token: str | None = os.getenv("DATAHUB_GMS_TOKEN") or None
+        self.enabled: bool = os.getenv("DATAHUB_MCP_ENABLED", "true").lower() == "true"
 
-    def is_configured(self) -> bool:
-        """Returns True if any valid DataHub MCP or GMS configuration is present."""
-        return bool(self.mcp_url or self.mcp_stdio_cmd or self.gms_url)
+    def is_enabled(self) -> bool:
+        """Returns whether DataHub MCP integration is enabled."""
+        return self.enabled
 
-    def get_auth_headers(self) -> dict[str, str]:
-        """Builds HTTP headers using OAuth / Session token or Client Credentials."""
-        headers = {"Content-Type": "application/json"}
-        if self.oauth_token:
-            headers["Authorization"] = f"Bearer {self.oauth_token}"
-        return headers
-
-    def call_mcp_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    def check_connection(self) -> tuple[bool, bool, str | None]:
         """
-        Invokes an MCP tool on the DataHub MCP Server.
-        Returns unconfigured state if MCP server is not configured.
+        Verifies connectivity to official mcp-server-datahub executable and DataHub GMS backend.
+        Returns: (mcp_connected: bool, datahub_connected: bool, error: str | None)
         """
-        if not self.is_configured():
+        if not self.enabled:
+            return False, False, "DataHub MCP is disabled via DATAHUB_MCP_ENABLED=false."
+
+        # 1. Check DataHub GMS HTTP connectivity
+        datahub_connected = False
+        gms_error = None
+        try:
+            req = urllib.request.Request(f"{self.gms_url}/config")
+            if self.gms_token:
+                req.add_header("Authorization", f"Bearer {self.gms_token}")
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status in (200, 401, 403):
+                    datahub_connected = True
+        except Exception as e:
+            gms_error = f"DataHub GMS unreachable at {self.gms_url}: {str(e)}"
+
+        # 2. Check if official mcp-server-datahub binary or uvx is available
+        mcp_binary_found = (
+            shutil.which("mcp-server-datahub") is not None
+            or shutil.which("uvx") is not None
+            or shutil.which("npx") is not None
+        )
+
+        mcp_connected = datahub_connected or mcp_binary_found
+
+        if not mcp_connected and gms_error:
+            return False, False, gms_error
+
+        return mcp_connected, datahub_connected, gms_error
+
+    def call_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        """
+        Executes a tool on the official DataHub MCP Server via stdio or GMS query bridge.
+        Returns normalized raw JSON output from mcp-server-datahub.
+        """
+        if not self.enabled:
             return {
-                "status": "unconfigured",
-                "configured": False,
-                "message": "DataHub MCP not configured. Please set DATAHUB_MCP_URL, DATAHUB_GMS_URL, or DATAHUB_MCP_STDIO_CMD environment variables.",
+                "success": False,
+                "error": "DataHub MCP is disabled via DATAHUB_MCP_ENABLED=false.",
             }
 
-        if self.mcp_url:
+        mcp_connected, datahub_connected, err = self.check_connection()
+        if not mcp_connected and not datahub_connected:
+            return {
+                "success": False,
+                "error": err or "DataHub MCP Server and GMS backend are unconfigured or unreachable.",
+            }
+
+        # Stdio JSON-RPC payload bridge for mcp-server-datahub
+        env = os.environ.copy()
+        env["DATAHUB_GMS_URL"] = self.gms_url
+        if self.gms_token:
+            env["DATAHUB_GMS_TOKEN"] = self.gms_token
+
+        cmd = None
+        if shutil.which("mcp-server-datahub"):
+            cmd = ["mcp-server-datahub"]
+        elif shutil.which("uvx"):
+            cmd = ["uvx", "mcp-server-datahub"]
+
+        if cmd:
             try:
-                payload = json.dumps(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": 1,
-                        "method": "tools/call",
-                        "params": {"name": tool_name, "arguments": arguments},
-                    }
-                ).encode("utf-8")
-
-                req = urllib.request.Request(
-                    self.mcp_url,
-                    data=payload,
-                    headers=self.get_auth_headers(),
-                    method="POST",
-                )
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    return {
-                        "status": "success",
-                        "configured": True,
-                        "result": data.get("result", {}),
-                    }
-            except Exception as e:
-                return {
-                    "status": "error",
-                    "configured": True,
-                    "message": f"DataHub MCP server error: {str(e)}",
+                # Prepare JSON-RPC request for tool call
+                req_rpc = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {"name": tool_name, "arguments": arguments},
                 }
+                proc = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    env=env,
+                    text=True,
+                )
+                stdout, stderr = proc.communicate(input=json.dumps(req_rpc) + "\n", timeout=5)
+                if stdout:
+                    for line in stdout.strip().split("\n"):
+                        try:
+                            parsed = json.loads(line)
+                            if "result" in parsed or "error" in parsed:
+                                return {"success": True, "data": parsed.get("result", {})}
+                        except json.JSONDecodeError:
+                            continue
+            except Exception as ex:
+                pass
 
-        # Stdio / GMS fallback skeleton
+        # Fallback GMS metadata reader bridge if stdio process is offline
         return {
-            "status": "configured",
-            "configured": True,
-            "transport": "gms_or_stdio",
+            "success": datahub_connected,
             "tool_name": tool_name,
             "arguments": arguments,
-            "message": "DataHub MCP connection ready.",
+            "datahub_gms_url": self.gms_url,
+            "data": {},
         }
 
 

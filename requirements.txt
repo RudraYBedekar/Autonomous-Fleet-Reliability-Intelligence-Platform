@@ -15,3 +15,4 @@ scipy
 matplotlib
 pytest
 httpx
+mcp-server-datahub

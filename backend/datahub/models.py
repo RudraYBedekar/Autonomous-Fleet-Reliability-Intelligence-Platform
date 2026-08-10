@@ -1,0 +1,43 @@
+"""
+Pydantic data models for DataHub MCP Server integration & FleetGuard context payload.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+from pydantic import BaseModel, Field
+
+
+class DataHubStatusResponse(BaseModel):
+    """Health status schema for DataHub MCP Server connection."""
+
+    mcp_enabled: bool = Field(..., description="Whether DataHub MCP integration is enabled in env.")
+    mcp_connected: bool = Field(..., description="Whether the official DataHub MCP Server process is reachable.")
+    datahub_connected: bool = Field(..., description="Whether DataHub GMS backend service is reachable.")
+    gms_url: str | None = Field(default=None, description="Configured DataHub GMS endpoint URL.")
+    error: str | None = Field(default=None, description="Sanitized connection error message if any.")
+
+
+class NormalizedAssetContext(BaseModel):
+    """Normalized metadata structure for DataHub entities."""
+
+    asset: str = Field(..., description="Target asset urn or name.")
+    description: str | None = Field(default=None, description="Asset documentation or description.")
+    owners: list[str] = Field(default_factory=list, description="List of asset owner corpuser URNs or names.")
+    schema_fields: list[dict[str, Any]] = Field(default_factory=list, description="Schema field definitions.")
+    upstream: list[dict[str, Any]] = Field(default_factory=list, description="Upstream lineage dependencies.")
+    downstream: list[dict[str, Any]] = Field(default_factory=list, description="Downstream lineage impact.")
+
+
+class FleetGuardContextPayload(BaseModel):
+    """Prepared DataHub metadata context payload for AWS Bedrock orchestration."""
+
+    model_config = {"populate_by_name": True}
+
+    asset: str = Field(..., description="Target asset name.")
+    schema_fields: list[dict[str, Any]] = Field(default_factory=list, alias="schema", description="Schema fields.")
+    upstream: list[dict[str, Any]] = Field(default_factory=list, description="Upstream dependencies.")
+    downstream: list[dict[str, Any]] = Field(default_factory=list, description="Downstream dependencies.")
+    affected_models: list[str] = Field(default_factory=list, description="Downstream ML models or features impacted.")
+    owner: str | None = Field(default=None, description="Primary asset owner.")
+    description: str | None = Field(default=None, description="Asset description.")
