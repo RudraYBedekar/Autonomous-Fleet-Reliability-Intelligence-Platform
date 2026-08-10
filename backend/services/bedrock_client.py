@@ -13,12 +13,15 @@ from botocore.exceptions import BotoCoreError, ClientError
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 PRIMARY_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-opus-4-6-v1")
 
-# Active Bedrock model IDs verified directly from account listing
+# Active Bedrock model IDs & Inference Profile IDs
 MODEL_CANDIDATES = [
     PRIMARY_MODEL_ID,
+    f"us.{PRIMARY_MODEL_ID}" if not PRIMARY_MODEL_ID.startswith("us.") else PRIMARY_MODEL_ID,
+    "us.anthropic.claude-opus-4-6-v1",
     "anthropic.claude-opus-4-6-v1",
+    "us.anthropic.claude-sonnet-4-6",
     "anthropic.claude-sonnet-4-6",
-    "anthropic.claude-haiku-4-5-20251001-v1:0",
+    "us.anthropic.claude-haiku-4-5-20251001-v1:0",
     "amazon.nova-lite-v1:0",
     "amazon.nova-pro-v1:0",
     "amazon.nova-micro-v1:0",
