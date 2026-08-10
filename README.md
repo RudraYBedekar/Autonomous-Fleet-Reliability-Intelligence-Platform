@@ -1,219 +1,125 @@
-Autonomous Fleet Reliability Intelligence Platform 🚜
+# Autonomous Fleet Reliability Intelligence Platform 🚜⚡
 
-A real-time fleet intelligence platform designed for telemetry ingestion, anomaly detection, predictive maintenance, and AI-assisted operational analytics for autonomous and connected vehicle systems.
+An enterprise-grade, real-time fleet intelligence platform for autonomous electric vehicles (EVs) featuring telemetry streaming, anomaly detection, Remaining Useful Life (RUL) prediction, **AWS Bedrock LLM reasoning**, and official **DataHub MCP Server / Agent Context Kit** metadata integration.
 
-This platform can be used across multiple industries where large-scale telemetry, operational monitoring, and real-time decision-making are critical. It is highly applicable in autonomous vehicle fleets, logistics and transportation systems, industrial IoT environments, smart city infrastructure, manufacturing operations, warehouse robotics, defense systems, agricultural automation, and predictive maintenance platforms. Organizations can use it to monitor live vehicle movement, detect anomalies before failures occur, analyze operational efficiency, forecast component degradation, and build intelligent AI-assisted observability systems for mission-critical operations. The project also serves as a strong learning and prototyping environment for distributed systems, event-driven architectures, cloud-native analytics, AI-powered monitoring systems, and real-time operational intelligence.
+Built for the **Build with DataHub Agent Hackathon**.
 
-This project simulates a production-grade telemetry ecosystem where live vehicle data is streamed, processed, analyzed, and visualized in real time using distributed systems and modern AI-powered analytics.
+---
 
-## ✨ Features
-- Real-time telemetry streaming using Apache Kafka
-- Live fleet tracking with WebSockets
-- Interactive geospatial visualization using Deck.gl
-- AI-assisted root cause analysis
-- Predictive maintenance and Remaining Useful Life (RUL) forecasting
-- Real-time anomaly detection using Isolation Forest and statistical models
-- Modern operational dashboard with dark-mode UI
-- Modular and scalable architecture
-- Cloud-ready deployment structure
-- AI-powered fleet intelligence workflows
+## 🌟 Key Capabilities & Hackathon Features
 
-## 📸 Dashboard Preview
+- 🤖 **AI Fleet Assistant & Copilot (`CopilotPanel.jsx`)**:
+  - Natural language vehicle search for 15 live Redwood City autonomous EVs (`car-001` through `car-015`).
+  - Interactive **Passenger & Route Manifest Cards** (*Pickup Address → Destination Address, Driver Contact, Live Speed, Battery %, Health Index %*).
+  - **`Focus on Map`**: Instantly tracks & centers the vehicle on the live 3D MapLibre/Deck.gl canvas.
+  - **`Run RCA`**: Triggers automated LLM Root Cause Diagnostics.
+  - **Clean Executive Plain Text**: Outputs 100% professional operational reports without raw markdown syntax.
 
-### Dashboard Previews
+- 🔗 **Official DataHub MCP Server Integration (`acryldata/mcp-server-datahub`)**:
+  - **Zero PAT Dependency**: 100% pluggable authentication using environment variables (`DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `DATAHUB_MCP_ENABLED`).
+  - **SSH Reverse Tunnel Architecture**: Seamlessly connects AWS EC2 FastAPI backend to local Windows Docker DataHub Core (`127.0.0.1:18080` → `localhost:8080`).
+  - **Distinct Health Statuses**: Reports `datahub_connected` (GMS REST health) and `mcp_connected` (MCP Server subprocess status) independently.
+  - **Zero Mock Metadata**: Unconfigured state cleanly returns `datahub_connected: false` without faking metadata.
 
-**Fleet Command Center**
-![Fleet Dashboard](assets/dashboard.png)
+- 🧠 **AWS Bedrock Reasoning Engine (`backend/services/bedrock_client.py`)**:
+  - Leverages AWS Bedrock multi-model client with fallback reasoning for automated Root Cause Analysis (RCA) and maintenance remediation plans.
 
-**Alternate Dashboard View**
-![Alternate Dashboard](assets/dashboard2.png)
+- 📡 **Real-Time Telemetry & Predictive Analytics**:
+  - Isolation Forest anomaly detection for LiDAR vibration frequency (Hz), battery thermal temp (°C), and motor RPM.
+  - Remaining Useful Life (RUL) forecasting.
 
+---
 
+## 🏗️ Architecture Diagram
 
+```
+┌────────────────────────────────────────────────────────┐
+│              AWS EC2 FastAPI Backend (Port 8000)       │
+│                                                        │
+│   backend/routers/datahub.py & backend/datahub/         │
+│     ├── GET /api/datahub/status                        │
+│     ├── GET /api/datahub/asset/{asset_name}            │
+│     └── GET /api/datahub/fleetguard-context/{asset}    │
+└───────────┬────────────────────────────────┬───────────┘
+            │                                │
+            │ (stdio transport)              │ (Context payload)
+            ▼                                ▼
+┌────────────────────────┐      ┌────────────────────────┐
+│  Official DataHub MCP  │      │      AWS Bedrock       │
+│  Server (via uvx/pip)  │      │     Reasoning LLM      │
+└───────────┬────────────┘      └────────────────────────┘
+            │ (GMS REST API)
+            ▼
+┌────────────────────────────────────────────────────────┐
+│    SSH Reverse Tunnel (EC2 127.0.0.1:18080)            │
+│    Forwarded to Windows localhost:8080 (DataHub Core)  │
+└────────────────────────────────────────────────────────┘
+```
 
+---
 
-These dashboards provide a real-time overview of your autonomous fleet operations, including:
-- Live vehicle tracking on an interactive map
-- Telemetry trends for multiple vehicles
-- Anomaly and health analytics
-- Modern, dark-mode UI for command center environments
+## 🛠️ Technology Stack
 
-The dashboard provides:
+- **Frontend**: React, Vite, Vanilla CSS (Glassmorphism), Deck.gl, MapLibre GL
+- **Backend**: FastAPI, Uvicorn, SQLAlchemy, WebSockets, Python 3.12
+- **Metadata Context**: Official `mcp-server-datahub` (`acryldata/mcp-server-datahub`), `acryl-datahub`
+- **AI & Reasoning**: AWS Bedrock, LangChain, Scikit-learn (Isolation Forest)
+- **Streaming & Infrastructure**: Apache Kafka (KRaft Mode), Nginx, AWS EC2
 
-- Live telemetry tracking
-- Real-time fleet monitoring
-- Vehicle health analytics
-- Interactive operational maps
-- Streaming telemetry trends
-- Fleet-wide anomaly visualization
-- High-performance geospatial rendering
-🏗️ System Architecture
-Autonomous Vehicles / IoT Sensors
-                │
-                ▼
-        Apache Kafka Streams
-                │
-                ▼
-      FastAPI Backend Services
-                │
- ┌──────────────┼──────────────┐
- ▼              ▼              ▼
-Telemetry   ML Analytics   WebSocket Hub
- Storage     Engine
-                │
-                ▼
-      React + Deck.gl Dashboard
-                │
-                ▼
-      AI Fleet Copilot / RAG
-🧠 AI & Analytics Engine
+---
 
-The analytics engine continuously evaluates incoming telemetry streams to identify operational risks, predict failures, and provide actionable insights in real time.
+## 🌐 API Access Points
 
-Live Telemetry Infrastructure
-![Streaming Infrastructure](assets/log.png)
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `GET /api/datahub/status` | `GET` | Health check for DataHub GMS & MCP Server connection |
+| `GET /api/datahub/asset/{asset_name}` | `GET` | Normalized DataHub asset schema, lineage, and ownership |
+| `GET /api/datahub/fleetguard-context/{asset_name}` | `GET` | DataHub context payload prepared for AWS Bedrock |
+| `POST /api/ai/ask` | `POST` | AI Fleet Assistant query & vehicle search |
+| `POST /api/ai/diagnose/{vehicle_id}` | `POST` | Automated LLM Root Cause Analysis (RCA) |
+| `GET /api/ai/fleet-brief` | `GET` | Executive fleet health brief |
 
-FastAPI and WebSocket backend infrastructure processing real-time telemetry events, fleet synchronization, and streaming analytics workflows.
+---
 
-Real-Time Fleet Tracking
-![Fleet Tracking](assets/Map.png)
+## 🚀 Quick Setup Guide
 
-Interactive geospatial visualization powered by Deck.gl and MapLibre for live fleet movement simulation and operational intelligence monitoring.
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/RudraYBedekar/Autonomous-Fleet-Reliability-Intelligence-Platform.git
+cd Autonomous-Fleet-Reliability-Intelligence-Platform
 
-## Included Analytics Modules
-- Isolation Forest anomaly detection
-- Z-Score based anomaly scoring
-- Predictive maintenance forecasting
-- Fleet health scoring
-- Telemetry trend analysis
-- Root cause inference engine
-- Operational intelligence workflows
+# Install Python requirements
+pip install -r requirements.txt
+pip install mcp-server-datahub
+```
 
-## Example Detections
-- Cooling system degradation
-- Sensor instability
-- Voltage fluctuations
-- Power delivery failures
-- Fleet-wide anomaly patterns
-- Route-level operational irregularities
-## ⚡ Technology Stack
+### 2. Configure Environment Variables (`.env`)
+```env
+DATAHUB_GMS_URL=http://127.0.0.1:18080
+DATAHUB_GMS_TOKEN=
+DATAHUB_MCP_ENABLED=true
+```
 
-**Frontend:**
-- React
-- Vite
-- Tailwind CSS
-- Deck.gl
-- MapLibre GL
+### 3. Establish SSH Reverse Tunnel (For EC2 Deployment)
+From your **Windows PowerShell**:
+```powershell
+ssh -i "path\to\your-key.pem" -R 18080:localhost:8080 ubuntu@<EC2_PUBLIC_IP>
+```
 
-**Backend:**
-- FastAPI
-- WebSockets
-- SQLAlchemy
+### 4. Verify Connection
+Run backend diagnostic script:
+```bash
+python -m backend.datahub.check_connection
+```
 
-**Streaming & Infrastructure:**
-- Apache Kafka (KRaft Mode)
-- PostgreSQL / SQLite
-- Docker-ready architecture
+### 5. Ingest Sample Fleet Metadata into DataHub
+```bash
+python -m backend.datahub.ingest_sample
+```
+Open **[http://localhost:9002](http://localhost:9002)** to inspect dataset schemas and lineage graphs in the DataHub UI!
 
-**AI / Machine Learning:**
-- Scikit-learn
-- Isolation Forest
-- LangChain
-- OpenAI API Integration
-🚀 Real-Time Capabilities
+---
 
-The platform supports:
-
-High-frequency telemetry ingestion
-Live vehicle movement simulation
-Real-time anomaly alerts
-Streaming operational analytics
-Interactive fleet visualization
-AI-assisted diagnostics
-
-Vehicle telemetry data is continuously streamed through Kafka topics and broadcast to connected dashboard clients through WebSockets with low-latency updates.
-
-📂 Project Structure
-backend/          → FastAPI services and APIs
-frontend/         → React dashboard UI
-streaming/        → Kafka producers and consumers
-ml/               → AI and analytics models
-infrastructure/   → Kafka setup and startup scripts
-assets/           → Images and architecture diagrams
-🚀 Getting Started
-Prerequisites
-Python 3.10+
-Node.js 18+
-Apache Kafka
-Git
-🔧 Installation
-1. Clone the Repository
-git clone <your-repository-url>
-cd telemetry-project
-2. Setup Backend & Kafka
-cd infrastructure
-setup.bat
-3. Install Frontend Dependencies
-cd ../frontend
-npm install
-4. Start All Services
-cd ../infrastructure
-start.bat
-🌐 Access Points
-Service	URL
-Dashboard	http://localhost:5173
-
-FastAPI Docs	http://localhost:8000/docs
-
-WebSocket Endpoint	ws://localhost:8000/ws/telemetry
-🔴 Live Simulation
-
-To activate live fleet simulation:
-
-Open a new terminal window and run:
-
-python live_simulation.py
-
-Then enable Live Mode from the dashboard UI.
-
-📊 Example Use Cases
-Fleet Management
-
-Monitor vehicle health, operational telemetry, and route intelligence in real time.
-
-Predictive Maintenance
-
-Forecast component failures before operational breakdowns occur.
-
-Smart City Infrastructure
-
-Analyze distributed transportation telemetry streams and operational behavior.
-
-Industrial IoT
-
-Track machine telemetry and detect operational anomalies across industrial systems.
-
-Autonomous Systems Research
-
-Experiment with distributed systems, AI analytics, and real-time telemetry pipelines.
-
-Warehouse Robotics
-
-Monitor robotic fleets, battery health, and operational reliability.
-
-🔮 Future Improvements
-Multi-region fleet simulation
-Historical route replay
-Driver behavior analytics
-Alert prioritization engine
-Reinforcement learning-based optimization
-Kubernetes deployment
-Edge telemetry processing
-AI-generated operational reports
-Distributed microservice orchestration
-📈 Why This Project Matters
-
-Modern autonomous and connected systems generate massive volumes of telemetry data that require real-time processing, intelligent anomaly detection, and operational observability.
-
-This platform demonstrates how distributed streaming systems, machine learning models, AI copilots, and modern visualization frameworks can work together to build scalable fleet intelligence infrastructure for real-world operational environments.
-
+## 📄 Documentation
+- 📘 **[docs/DATAHUB_MCP_SETUP.md](docs/DATAHUB_MCP_SETUP.md)**: Detailed DataHub MCP Server architecture, SSH tunnel setup, and Bedrock integration design.
+- 📋 **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)**: Complete progress summary of all features built till now.
