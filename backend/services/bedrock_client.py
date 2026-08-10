@@ -30,14 +30,23 @@ MODEL_CANDIDATES = [
 ]
 
 
+from botocore.config import Config
+
+FAST_BOTO_CONFIG = Config(
+    connect_timeout=3,
+    read_timeout=6,
+    retries={"max_attempts": 1},
+)
+
+
 def get_bedrock_runtime():
     """Initializes Bedrock runtime client for model invocation."""
-    return boto3.client("bedrock-runtime", region_name=AWS_REGION)
+    return boto3.client("bedrock-runtime", region_name=AWS_REGION, config=FAST_BOTO_CONFIG)
 
 
 def get_bedrock_control():
     """Initializes Bedrock control plane client for metadata and model listing."""
-    return boto3.client("bedrock", region_name=AWS_REGION)
+    return boto3.client("bedrock", region_name=AWS_REGION, config=FAST_BOTO_CONFIG)
 
 
 def format_payload(model_id: str, prompt: str, system_prompt: str) -> dict:
@@ -134,7 +143,7 @@ def query_bedrock_llm(prompt: str, system_prompt: str = "You are FleetGuard AI a
     candidates = [m for m in MODEL_CANDIDATES if not (m in seen or seen.add(m))]
 
     last_error = None
-    for model_id in candidates[:4]:  # Try top candidate models
+    for model_id in candidates[:2]:  # Try top 2 candidate models fast
         try:
             payload = format_payload(model_id, prompt, system_prompt)
             response = client.invoke_model(
@@ -160,5 +169,6 @@ def query_bedrock_llm(prompt: str, system_prompt: str = "You are FleetGuard AI a
         f"Bedrock Error: All model candidates failed in region '{AWS_REGION}'. "
         f"Last error: {str(last_error)}. Ensure 'Model access' is granted in AWS Bedrock Console."
     )
+
 
 
