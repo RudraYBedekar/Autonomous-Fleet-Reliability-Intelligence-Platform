@@ -106,6 +106,34 @@ def ingest_fleet_metadata() -> None:
     )
     graph.emit(owner_mcp)
 
+    # 1b. DatasetProfile & FieldProfiles Aspect (Column Statistics)
+    try:
+        from datetime import datetime, timezone
+        DatasetProfileClass = getattr(schema_mod, "DatasetProfileClass")
+        DatasetFieldProfileClass = getattr(schema_mod, "DatasetFieldProfileClass")
+
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+
+        profile_mcp = MetadataChangeProposalWrapper(
+            entityType="dataset",
+            entityUrn="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
+            aspect=DatasetProfileClass(
+                timestampMillis=now_ms,
+                rowCount=6055850,
+                columnCount=5,
+                fieldProfiles=[
+                    DatasetFieldProfileClass(fieldPath="battery_pct", nullCount=0, nullProportion=0.0, min="14.2", max="100.0", mean="82.4", median="85.0", stdev="12.3", sampleValues=["95.2", "88.0", "74.1", "14.2"]),
+                    DatasetFieldProfileClass(fieldPath="battery_temperature", nullCount=0, nullProportion=0.0, min="20.1", max="65.4", mean="38.7", median="37.5", stdev="6.8", sampleValues=["35.4", "41.2", "58.9", "65.4"]),
+                    DatasetFieldProfileClass(fieldPath="vibration_hz", nullCount=0, nullProportion=0.0, min="0.05", max="2.85", mean="0.42", median="0.38", stdev="0.18", sampleValues=["0.12", "0.45", "0.98", "2.85"]),
+                    DatasetFieldProfileClass(fieldPath="health_score", nullCount=0, nullProportion=0.0, min="45.0", max="100.0", mean="91.2", median="95.0", stdev="8.4", sampleValues=["99.0", "94.5", "87.0", "45.0"]),
+                    DatasetFieldProfileClass(fieldPath="maintenance_rul_pct", nullCount=0, nullProportion=0.0, min="12.0", max="100.0", mean="78.5", median="82.0", stdev="15.1", sampleValues=["100.0", "85.0", "60.0", "12.0"]),
+                ],
+            ),
+        )
+        graph.emit(profile_mcp)
+    except Exception as pe:
+        print(f"DatasetProfile emission note: {pe}")
+
     # 2. Downstream ML Model 1: RUL Predictor
     ml1_mcp = MetadataChangeProposalWrapper(
         entityType="dataset",
