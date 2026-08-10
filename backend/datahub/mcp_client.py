@@ -43,18 +43,31 @@ class DataHubMCPClient:
         if not self.enabled:
             return False, False, "DataHub MCP is disabled via DATAHUB_MCP_ENABLED=false."
 
-        # 1. Check DataHub GMS HTTP connectivity
+        # 1. Check DataHub GMS HTTP connectivity across candidate ports (8080, 9002)
         datahub_connected = False
         gms_error = None
-        try:
-            req = urllib.request.Request(f"{self.gms_url}/config")
-            if self.gms_token:
-                req.add_header("Authorization", f"Bearer {self.gms_token}")
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                if resp.status in (200, 401, 403):
-                    datahub_connected = True
-        except Exception as e:
-            gms_error = f"DataHub GMS unreachable at {self.gms_url}: {str(e)}"
+        candidates = [self.gms_url]
+        if "9002" not in self.gms_url:
+            candidates.append("http://localhost:9002")
+            candidates.append("http://127.0.0.1:9002")
+        if "8080" not in self.gms_url:
+            candidates.append("http://localhost:8080")
+
+        for url in candidates:
+            try:
+                target_url = f"{url.rstrip('/')}/config" if not url.endswith("/config") else url
+                req = urllib.request.Request(target_url)
+                if self.gms_token:
+                    req.add_header("Authorization", f"Bearer {self.gms_token}")
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    if resp.status in (200, 401, 403, 302):
+                        datahub_connected = True
+                        self.gms_url = url.rstrip("/")
+                        gms_error = None
+                        break
+            except Exception as e:
+                if not gms_error:
+                    gms_error = f"DataHub unreachable at {url}: {str(e)}"
 
         # 2. Check if official mcp-server-datahub binary or uvx is available
         mcp_binary_found = (
