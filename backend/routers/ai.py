@@ -91,19 +91,33 @@ def ask_copilot(req: QueryRequest):
 
         context_str = f"User Request: '{query_text}'\n"
         if matched_vehicle:
-            context_str += f"\nTarget Vehicle Data:\n{matched_vehicle}\n"
-        context_str += f"\nFleet Status Summary (N=15):\n"
+            context_str += (
+                f"\nTarget Vehicle Complete Record:\n"
+                f"- Vehicle ID: {matched_vehicle['vehicle_id']}\n"
+                f"- Driver: {matched_vehicle['driver_name']} ({matched_vehicle['driver_phone']})\n"
+                f"- Passengers: {matched_vehicle['passenger_count']}\n"
+                f"- Route: {matched_vehicle['pickup_address']} -> {matched_vehicle['destination_address']}\n"
+                f"- Route Name/Difficulty: {matched_vehicle['route_name']} ({matched_vehicle['route_difficulty']})\n"
+                f"- Telemetry: Speed={matched_vehicle.get('speed_kmh')} km/h, Battery={matched_vehicle.get('battery_pct')}%, Health={matched_vehicle.get('health_score')}%, RUL={matched_vehicle.get('maintenance_rul_pct')}%\n"
+                f"- Status: Zone={matched_vehicle.get('road_zone')}, TripStatus={matched_vehicle.get('trip_status')}, ETA={matched_vehicle.get('eta_minutes')} min\n"
+                f"- Odometer: {matched_vehicle.get('odometer_km')} km, Maintenance due in {matched_vehicle.get('maintenance_due_km')} km\n"
+                f"- Active Alert: {matched_vehicle.get('active_alert', 'None')}\n"
+            )
+
+        context_str += f"\nFleet Overview (15 EVs in Redwood City):\n"
         for v in all_vehicles[:5]:
-            context_str += f"- {v['vehicle_id']} (Driver: {v['driver_name']}, Passengers: {v['passenger_count']}, Battery: {v.get('battery_pct', 90)}%, Health: {v.get('health_score', 95)}%, Alert: {v.get('active_alert', 'None')})\n"
+            context_str += f"- {v['vehicle_id']}: Driver={v['driver_name']}, Passengers={v['passenger_count']}, Battery={v.get('battery_pct')}%, Health={v.get('health_score')}%, Alert={v.get('active_alert', 'None')}\n"
         if active_alerts:
-            context_str += f"\nActive Rule Alerts ({len(active_alerts)} total):\n"
+            context_str += f"\nActive Fleet Alerts ({len(active_alerts)}):\n"
             for a in active_alerts[:3]:
                 context_str += f"- [{a.get('severity', 'info').upper()}] {a.get('vehicle_id')}: {a.get('message')}\n"
 
         system_prompt = (
-            "You are FleetGuard AI Assistant, an expert autonomous EV fleet copilot. "
-            "You provide detailed descriptions, passenger info, telemetry metrics, alerts, and vehicle diagnostic guidance. "
-            "Keep your answer clear, professional, friendly, and structured."
+            "You are FleetGuard AI Assistant, an expert autonomous EV fleet operations engineer. "
+            "Your responses MUST be professional, executive-ready, authoritative, and structured. "
+            "Always include passenger count, driver contact, telemetry metrics, route details, and alert state. "
+            "Do NOT state that telemetry or driver data is missing when target vehicle data is present. "
+            "Do NOT append conversational filler, disclaimers, or 'Would you like me to...' lists at the end."
         )
 
         llm_response = query_bedrock_llm(prompt=context_str, system_prompt=system_prompt)
@@ -111,37 +125,65 @@ def ask_copilot(req: QueryRequest):
         if "Bedrock Error" in llm_response or not llm_response:
             if matched_vehicle:
                 v = matched_vehicle
-                alert_text = f" 🚨 Active Alert: {v['active_alert']}" if v.get('active_alert') else " ✅ No Active Alerts"
+                alert_section = (
+                    f"**Active Operational Alert**: {v['active_alert']} (Severity: {str(v.get('alert_severity', 'warning')).upper()})"
+                    if v.get("active_alert")
+                    else "**Alert Status**: Nominal - No Active System Faults"
+                )
+
                 llm_response = (
-                    f"**Vehicle Analysis for {v['vehicle_id']} ({v['driver_name']})**\n\n"
-                    f"• **Passengers**: {v['passenger_count']} onboard\n"
-                    f"• **Route**: {v['pickup_address']} -> {v['destination_address']} ({v['route_name']}, {v['route_difficulty']} difficulty)\n"
-                    f"• **Telemetry**: Speed {v.get('speed_kmh', 0)} km/h | Battery {v.get('battery_pct', 90)}% | Health {v.get('health_score', 95)}% | RUL {v.get('maintenance_rul_pct', 100)}%\n"
-                    f"• **Zone & Status**: {v.get('road_zone', 'residential').capitalize()} zone | {v.get('trip_status', 'en_route').replace('_', ' ').title()} (ETA ~{v.get('eta_minutes', 5)} min)\n"
-                    f"• **Engine & Odometer**: {v['engine_status'].title()} status | {v['odometer_km']} km driven | Maintenance due in {v['maintenance_due_km']} km\n"
-                    f"• **Alert Status**:{alert_text}"
+                    f"### Vehicle Status Report: {v['vehicle_id']} ({v['driver_name']})\n\n"
+                    f"**1. Executive Summary**\n"
+                    f"Vehicle **{v['vehicle_id']}** is an all-electric ground vehicle (BEV) operated by **{v['driver_name']}** ({v['driver_phone']}). "
+                    f"The vehicle is currently in **{v.get('trip_status', 'en_route').replace('_', ' ').title()}** status carrying **{v['passenger_count']} passenger(s)** on the **{v['route_name']}** route ({v['route_difficulty']} complexity).\n\n"
+                    f"**2. Passenger & Route Manifest**\n"
+                    f"• **Passengers Onboard**: {v['passenger_count']}\n"
+                    f"• **Pickup Address**: {v['pickup_address']}\n"
+                    f"• **Destination Address**: {v['destination_address']}\n"
+                    f"• **Estimated Arrival (ETA)**: ~{v.get('eta_minutes', 5.0):.1f} minutes\n\n"
+                    f"**3. Real-Time Telemetry & Systems Health**\n"
+                    f"• **Ground Speed**: {v.get('speed_kmh', 0):.1f} km/h\n"
+                    f"• **Battery Level**: {v.get('battery_pct', 90):.1f}%\n"
+                    f"• **Health Index**: {v.get('health_score', 95):.1f}%\n"
+                    f"• **Maintenance RUL**: {v.get('maintenance_rul_pct', 100):.1f}% remaining\n"
+                    f"• **Road Zone**: {v.get('road_zone', 'residential').capitalize()} zone\n"
+                    f"• **Engine Status**: {v['engine_status'].title()} | {v['odometer_km']:.1f} km odometer\n\n"
+                    f"**4. Operational Alert Status**\n"
+                    f"{alert_section}\n\n"
+                    f"**5. Action Protocol**\n"
+                    f"Automated telemetry tracking active. Fleet dispatchers can contact driver directly or click 'Focus on Map' below to track vehicle position in real time."
                 )
             elif "battery" in query_text.lower() or "charging" in query_text.lower():
                 low_batt = [v for v in all_vehicles if v.get("battery_pct", 100) < 50]
                 names = ", ".join([v["vehicle_id"] for v in low_batt]) if low_batt else "None"
-                llm_response = f"**Battery & Charging Overview**\n\nFound {len(low_batt)} vehicle(s) with battery under 50%: **{names}**. All vehicles have automated rerouting enabled to Redwood City charging stations."
+                llm_response = (
+                    "### Fleet Battery & Charging Analysis\n\n"
+                    f"• **Low Battery Count (<50%)**: {len(low_batt)} vehicle(s)\n"
+                    f"• **Vehicles Requiring Charging**: {names}\n"
+                    "• **Automatic Rerouting**: Enabled across Redwood City charging network"
+                )
             elif "passenger" in query_text.lower():
                 pass_total = sum(v.get("passenger_count", 0) for v in all_vehicles)
                 high_p = sorted(all_vehicles, key=lambda x: x.get("passenger_count", 0), reverse=True)[:3]
                 p_summary = ", ".join([f"{v['vehicle_id']} ({v['passenger_count']} passengers)" for v in high_p])
-                llm_response = f"**Fleet Passenger Summary**\n\nTotal passengers currently in transport across 15 EVs: **{pass_total}**.\nTop occupancy vehicles: {p_summary}."
+                llm_response = (
+                    "### Passenger Transport Overview\n\n"
+                    f"• **Total Active Passengers**: {pass_total} currently in transport across 15 EVs\n"
+                    f"• **Highest Occupancy Vehicles**: {p_summary}\n"
+                    "• **Cabin Safety Status**: Nominal across all active routes"
+                )
             elif "alert" in query_text.lower() or "critical" in query_text.lower():
                 alerts = [v for v in all_vehicles if v.get("active_alert")]
+                alert_lines = "\n".join([f"• **{v['vehicle_id']}**: {v['active_alert']} ({v.get('alert_severity', 'info').upper()})" for v in alerts]) if alerts else "No critical alerts active across the fleet."
                 llm_response = (
-                    f"**Active Fleet Alerts ({len(alerts)})**\n\n"
-                    + "\n".join([f"• **{v['vehicle_id']}**: {v['active_alert']} ({v.get('alert_severity', 'info').upper()})" for v in alerts])
-                    if alerts
-                    else "No critical alerts active across the fleet."
+                    f"### Fleet Operational Alerts Summary ({len(alerts)} Active)\n\n"
+                    f"{alert_lines}"
                 )
             else:
                 llm_response = (
-                    "**Fleet Overview (15 Electric Autonomous Vehicles)**\n\n"
-                    "All 15 EVs are actively monitoring routes in Redwood City, CA. You can ask me to search specific cars (e.g. `car-001` to `car-015`), analyze passenger load, check battery levels, or view live telemetry metrics."
+                    "### Fleet Guard Intelligence Overview (N=15 EVs)\n\n"
+                    "All 15 electric autonomous vehicles are operating on Redwood City, CA routes under active telemetry monitoring. "
+                    "You may query specific vehicle IDs (e.g. `car-001` through `car-015`) to view passenger manifests, live sensor readings, battery metrics, and diagnostics."
                 )
 
         return {
