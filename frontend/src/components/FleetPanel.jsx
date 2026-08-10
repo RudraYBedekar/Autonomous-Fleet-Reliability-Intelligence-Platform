@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  MapPin, Navigation, Battery, HeartPulse, Gauge, User, Wrench, Users, Route, Clock, Activity, Zap,
+  MapPin, Navigation, Battery, HeartPulse, Gauge, User, Wrench, Users, Route, Clock, Activity, Zap, Bot, Sparkles,
 } from 'lucide-react';
 import MessageModal from './MessageModal';
 import VehicleContactActions from './VehicleContactActions';
@@ -78,7 +78,7 @@ function batteryTextColor(pct) {
 }
 
 export default function FleetPanel({
-  fleetData, selectedId, onSelect, manifest, onReplayPath, onReplayPoint,
+  fleetData, selectedId, onSelect, manifest, onReplayPath, onReplayPoint, onToggleCopilot,
 }) {
   const [loading, setLoading] = useState(!manifest);
   const [messageVehicle, setMessageVehicle] = useState(null);
@@ -146,12 +146,22 @@ export default function FleetPanel({
 
   return (
     <aside className="w-[360px] shrink-0 bg-dark-900 border-r border-dark-700 flex flex-col h-full">
-      <div className="p-4 border-b border-dark-700">
-        <h1 className="text-lg font-bold text-white tracking-tight">Electric Fleet Dispatch</h1>
-        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-          <Zap size={11} className="text-yellow-400" />
-          Redwood City BEV fleet · auto-charge below 15%
-        </p>
+      <div className="p-4 border-b border-dark-700 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-white tracking-tight">Electric Fleet Dispatch</h1>
+          <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+            <Zap size={11} className="text-yellow-400" />
+            Redwood City BEV fleet · auto-charge
+          </p>
+        </div>
+        <button
+          onClick={onToggleCopilot}
+          title="Open AI Chatbot & Car Search"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-brand-blue to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium text-xs rounded-xl shadow-md transition-all hover:scale-105"
+        >
+          <Bot className="w-4 h-4" />
+          <span>AI Search</span>
+        </button>
       </div>
 
       <AlertsPanel onSelectVehicle={onSelect} />

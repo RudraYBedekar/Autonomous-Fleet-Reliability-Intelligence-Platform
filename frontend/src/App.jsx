@@ -84,6 +84,7 @@ function App() {
           manifest={manifest}
           onReplayPath={handleReplayPath}
           onReplayPoint={handleReplayPoint}
+          onToggleCopilot={() => setIsCopilotOpen((prev) => !prev)}
         />
       </ErrorBoundary>
       <main className="flex-1 min-w-0 min-h-0 h-full relative">
