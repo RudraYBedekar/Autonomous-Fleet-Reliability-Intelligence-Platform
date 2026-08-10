@@ -9,13 +9,13 @@ from pydantic import BaseModel, Field
 
 
 class DataHubStatusResponse(BaseModel):
-    """Health status schema for DataHub MCP Server connection."""
+    """Health status schema for DataHub GMS & MCP Server connection."""
 
-    mcp_enabled: bool = Field(..., description="Whether DataHub MCP integration is enabled in env.")
-    mcp_connected: bool = Field(..., description="Whether the official DataHub MCP Server process is reachable.")
-    datahub_connected: bool = Field(..., description="Whether DataHub GMS backend service is reachable.")
-    gms_url: str | None = Field(default=None, description="Configured DataHub GMS endpoint URL.")
-    error: str | None = Field(default=None, description="Sanitized connection error message if any.")
+    mcp_enabled: bool = Field(..., description="Whether DataHub MCP integration is enabled.")
+    mcp_connected: bool = Field(..., description="Whether official mcp-server-datahub process is reachable.")
+    datahub_connected: bool = Field(..., description="Whether DataHub GMS backend is reachable.")
+    datahub_gms_url: str = Field(..., description="Configured DataHub GMS endpoint URL.")
+    error: str | None = Field(default=None, description="Sanitized connection error message if unreachable.")
 
 
 class NormalizedAssetContext(BaseModel):

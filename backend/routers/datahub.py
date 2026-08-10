@@ -34,6 +34,7 @@ def datahub_status():
             mcp_enabled=True,
             mcp_connected=False,
             datahub_connected=False,
+            datahub_gms_url="http://127.0.0.1:18080",
             error=f"Health check error: {str(e)}",
         )
 

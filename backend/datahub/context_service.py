@@ -22,23 +22,23 @@ from backend.datahub.models import DataHubStatusResponse, FleetGuardContextPaylo
 
 
 def get_status() -> DataHubStatusResponse:
-    """Returns connection and configuration health for official DataHub MCP Server."""
+    """Returns connection and configuration health for DataHub GMS backend & MCP Server."""
     client = get_mcp_client()
     if not client.is_enabled():
         return DataHubStatusResponse(
             mcp_enabled=False,
             mcp_connected=False,
             datahub_connected=False,
-            gms_url=client.gms_url,
+            datahub_gms_url=client.gms_url,
             error="DataHub MCP integration disabled via DATAHUB_MCP_ENABLED=false",
         )
 
-    mcp_connected, datahub_connected, error = client.check_connection()
+    datahub_connected, mcp_connected, error = client.check_status()
     return DataHubStatusResponse(
         mcp_enabled=True,
         mcp_connected=mcp_connected,
         datahub_connected=datahub_connected,
-        gms_url=client.gms_url,
+        datahub_gms_url=client.gms_url,
         error=error,
     )
 
