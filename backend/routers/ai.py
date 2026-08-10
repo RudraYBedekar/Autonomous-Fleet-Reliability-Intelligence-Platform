@@ -230,8 +230,11 @@ def diagnose_vehicle(vehicle_id: str):
     return {
         "vehicle_id": vehicle_id,
         "vehicle_info": info,
+        "vehicle": info,
         "rca": rca_res,
+        "diagnostic_summary": rca_res,
         "ai_analysis": agent_res["root_cause_summary"],
+        "ai_report": agent_res["root_cause_summary"],
         "affected_models": agent_res["affected_models"],
         "datahub_owner": agent_res["datahub_owner"],
         "mitigation_action": agent_res["mitigation_action"],
@@ -239,13 +242,6 @@ def diagnose_vehicle(vehicle_id: str):
         "agent_loop": agent_res,
     }
 
-
-    return {
-        "vehicle_id": vehicle_id,
-        "diagnostic_summary": rca_res,
-        "ai_report": analysis_text,
-        "vehicle": info,
-    }
 
 
 @router.get("/fleet-brief")

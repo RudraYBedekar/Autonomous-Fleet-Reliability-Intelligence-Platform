@@ -18,7 +18,20 @@ from backend.datahub.models import (
     NormalizedAssetContext,
 )
 
+from pydantic import BaseModel
+from typing import Optional, List
+from backend.datahub.writeback import emit_investigation_result
+
 router = APIRouter(prefix="/api/datahub", tags=["DataHub MCP"])
+
+
+class WritebackRequest(BaseModel):
+    asset_name: str = "vehicle_health_features"
+    severity: str = "CRITICAL"
+    root_cause: str = "Thermal runaway risk"
+    action_taken: str = "Rerouted vehicle to station"
+    affected_models: Optional[List[str]] = None
+    vehicle_id: str = "car-001"
 
 
 @router.get("/status", response_model=DataHubStatusResponse)
@@ -34,7 +47,7 @@ def datahub_status():
             mcp_enabled=True,
             mcp_connected=False,
             datahub_connected=False,
-            datahub_gms_url="http://127.0.0.1:18080",
+            datahub_gms_url="http://localhost:8080",
             error=f"Health check error: {str(e)}",
         )
 
@@ -57,3 +70,19 @@ def fleetguard_context(asset_name: str):
         return get_fleetguard_context(asset_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+from backend.datahub.live_publisher import publish_live_fleet_metadata
+
+
+@router.post("/publish-live")
+def trigger_publish_live():
+    """
+    Triggers live publishing of real vehicle telemetry datasets, schemas, and ML lineage directly to DataHub GMS.
+    """
+    try:
+        return publish_live_fleet_metadata()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Live publishing failed: {str(e)}")
+
+

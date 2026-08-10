@@ -134,7 +134,7 @@ def query_bedrock_llm(prompt: str, system_prompt: str = "You are FleetGuard AI a
     candidates = [m for m in MODEL_CANDIDATES if not (m in seen or seen.add(m))]
 
     last_error = None
-    for model_id in candidates[:3]:  # Try top 3 candidate models
+    for model_id in candidates[:4]:  # Try top candidate models
         try:
             payload = format_payload(model_id, prompt, system_prompt)
             response = client.invoke_model(
@@ -156,19 +156,9 @@ def query_bedrock_llm(prompt: str, system_prompt: str = "You are FleetGuard AI a
             print(f"[Bedrock Retry] Model '{model_id}' failed: {e}")
             continue
 
-
-            response_body = json.loads(response["body"].read().decode("utf-8"))
-            result_text = parse_response(model_id, response_body)
-            print(f"[Bedrock Success] Invoked model: '{model_id}'")
-            return result_text
-
-        except (BotoCoreError, ClientError) as e:
-            last_error = e
-            print(f"[Bedrock Retry] Model '{model_id}' failed: {e}")
-            continue
-
     return (
         f"Bedrock Error: All model candidates failed in region '{AWS_REGION}'. "
         f"Last error: {str(last_error)}. Ensure 'Model access' is granted in AWS Bedrock Console."
     )
+
 

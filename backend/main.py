@@ -40,8 +40,17 @@ app.include_router(fleetguard.router)
 
 
 
+from backend.datahub.live_publisher import publish_live_fleet_metadata
+
+
 @app.on_event("startup")
 async def startup_event():
+    # Publish live application telemetry dataset, schema, and ML lineage to DataHub GMS
+    try:
+        publish_live_fleet_metadata()
+    except Exception as e:
+        print(f"[DataHub] Live startup metadata publishing skipped: {e}")
+
     use_kafka = os.getenv("TELEMETRY_USE_KAFKA", "false").lower() == "true"
 
     if use_kafka:
@@ -55,6 +64,7 @@ async def startup_event():
             await generator.run(websockets.publish_telemetry)
 
         asyncio.create_task(run_generator())
+
 
 
 @app.get("/")

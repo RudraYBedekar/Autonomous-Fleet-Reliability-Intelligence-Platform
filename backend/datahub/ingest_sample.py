@@ -15,18 +15,7 @@ Usage:
 from __future__ import annotations
 
 import os
-from datahub.emitter.mcp import MetadataChangeProposalWrapper
-from datahub.ingestion.graph.client import DataHubGraph
-from datahub.ingestion.graph.config import DatahubClientConfig
-from datahub.metadata.schema_classes import (
-    AuditStampClass,
-    DatasetPropertiesClass,
-    OwnerClass,
-    OwnershipClass,
-    OwnershipTypeClass,
-    UpstreamClass,
-    UpstreamLineageClass,
-)
+import importlib
 
 
 def ingest_fleet_metadata() -> None:
@@ -35,9 +24,29 @@ def ingest_fleet_metadata() -> None:
     print(f"Ingesting fleet metadata & ML lineage into DataHub GMS at: {gms_url}")
 
     try:
+        mcp_mod = importlib.import_module("datahub.emitter.mcp")
+        graph_mod = importlib.import_module("datahub.ingestion.graph.client")
+        config_mod = importlib.import_module("datahub.ingestion.graph.config")
+        schema_mod = importlib.import_module("datahub.metadata.schema_classes")
+
+        MetadataChangeProposalWrapper = getattr(mcp_mod, "MetadataChangeProposalWrapper")
+        DataHubGraph = getattr(graph_mod, "DataHubGraph")
+        DatahubClientConfig = getattr(config_mod, "DatahubClientConfig")
+        AuditStampClass = getattr(schema_mod, "AuditStampClass")
+        DatasetPropertiesClass = getattr(schema_mod, "DatasetPropertiesClass")
+        OwnerClass = getattr(schema_mod, "OwnerClass")
+        OwnershipClass = getattr(schema_mod, "OwnershipClass")
+        OwnershipTypeClass = getattr(schema_mod, "OwnershipTypeClass")
+        UpstreamClass = getattr(schema_mod, "UpstreamClass")
+        UpstreamLineageClass = getattr(schema_mod, "UpstreamLineageClass")
+        SchemaMetadataClass = getattr(schema_mod, "SchemaMetadataClass")
+        SchemaFieldClass = getattr(schema_mod, "SchemaFieldClass")
+        SchemaFieldDataTypeClass = getattr(schema_mod, "SchemaFieldDataTypeClass")
+        NumberTypeClass = getattr(schema_mod, "NumberTypeClass")
+
         graph = DataHubGraph(DatahubClientConfig(server=gms_url))
     except Exception as err:
-        print(f"Warning: DataHub Graph connection failed: {err}")
+        print(f"Warning: DataHub Graph SDK connection failed: {err}")
         return
 
     # 1. vehicle_health_features dataset
@@ -56,6 +65,30 @@ def ingest_fleet_metadata() -> None:
         ),
     )
     graph.emit(ds1_mcp)
+
+    # SchemaMetadata aspect
+    try:
+        schema_mcp = MetadataChangeProposalWrapper(
+            entityType="dataset",
+            entityUrn="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
+            aspect=SchemaMetadataClass(
+                schemaName="VehicleHealthFeatures",
+                platform="urn:li:dataPlatform:kafka",
+                version=1,
+                hash="",
+                platformSchema={},
+                fields=[
+                    SchemaFieldClass(fieldPath="battery_pct", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="HV battery state of charge %"),
+                    SchemaFieldClass(fieldPath="battery_temperature", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Battery pack temperature in Celsius"),
+                    SchemaFieldClass(fieldPath="vibration_hz", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="LiDAR mount vibration frequency"),
+                    SchemaFieldClass(fieldPath="health_score", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Composite vehicle health index"),
+                    SchemaFieldClass(fieldPath="maintenance_rul_pct", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Predicted Remaining Useful Life %"),
+                ],
+            ),
+        )
+        graph.emit(schema_mcp)
+    except Exception as se:
+        print(f"SchemaMetadata emission note: {se}")
 
     # Ownership aspect
     owner_mcp = MetadataChangeProposalWrapper(

@@ -8,7 +8,7 @@ Network Architecture:
 - EC2 SSH Reverse Tunnel: DATAHUB_GMS_URL=http://127.0.0.1:18080 -> Windows GMS 8080
 
 Environment Variables:
-- DATAHUB_GMS_URL (default: http://127.0.0.1:18080)
+- DATAHUB_GMS_URL (default: http://localhost:8080)
 - DATAHUB_GMS_TOKEN (optional bearer token, no PAT requirement)
 - DATAHUB_MCP_ENABLED (default: true)
 """
@@ -34,7 +34,7 @@ class DataHubMCPClient:
 
     def __init__(self) -> None:
         load_dotenv()
-        self.gms_url: str = os.getenv("DATAHUB_GMS_URL", "http://127.0.0.1:18080").rstrip("/")
+        self.gms_url: str = os.getenv("DATAHUB_GMS_URL", "http://localhost:8080").rstrip("/")
         self.gms_token: str | None = os.getenv("DATAHUB_GMS_TOKEN") or None
         self.enabled: bool = os.getenv("DATAHUB_MCP_ENABLED", "true").lower() == "true"
         logger.info(f"DataHub GMS configured: {self.gms_url}")

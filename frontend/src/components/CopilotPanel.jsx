@@ -93,8 +93,8 @@ export default function CopilotPanel({ isOpen, onClose, onSelect, selectedId }) 
         {
           id: Date.now().toString(),
           sender: 'bot',
-          text: data.ai_report || `Diagnostic for ${vehicleId} completed.`,
-          matchedVehicle: data.vehicle,
+          text: data.ai_report || data.ai_analysis || `Diagnostic for ${vehicleId} completed.`,
+          matchedVehicle: data.vehicle || data.vehicle_info,
         },
       ]);
     } catch (err) {

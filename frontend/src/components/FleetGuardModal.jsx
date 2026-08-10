@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../api';
 
 export default function FleetGuardModal({ vehicleId, alertType, onClose, onComplete }) {
   const [loading, setLoading] = useState(true);
@@ -11,7 +12,7 @@ export default function FleetGuardModal({ vehicleId, alertType, onClose, onCompl
     const runAgentLoop = async () => {
       try {
         setLoading(true);
-        const res = await fetch('http://localhost:8000/api/fleetguard/investigate', {
+        const res = await fetch(apiUrl('/api/fleetguard/investigate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -63,7 +64,7 @@ export default function FleetGuardModal({ vehicleId, alertType, onClose, onCompl
                 FleetGuard Autonomous AI Agent Loop
               </h2>
               <p className="text-xs text-slate-400">
-                DataHub MCP Context Injection • ML Lineage Blast Radius • Auto-Mitigation • GMS Write-Back
+                DataHub Context Injection • ML Lineage Blast Radius • Auto-Mitigation • GMS Write-Back
               </p>
             </div>
           </div>
@@ -80,7 +81,7 @@ export default function FleetGuardModal({ vehicleId, alertType, onClose, onCompl
           <div className="flex flex-col items-center justify-center py-16 space-y-4">
             <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-400 rounded-full animate-spin"></div>
             <p className="text-cyan-400 font-medium text-sm animate-pulse">
-              Initializing Autonomous Agent Loop & Querying DataHub MCP...
+              Initializing Autonomous Agent Loop & Querying DataHub...
             </p>
           </div>
         )}
@@ -103,8 +104,10 @@ export default function FleetGuardModal({ vehicleId, alertType, onClose, onCompl
                 <span className="font-semibold text-cyan-300">{agentData.vehicle_id}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">Active Alert</span>
-                <span className="font-semibold text-amber-400">{agentData.alert || 'Battery & RUL Risk'}</span>
+                <span className="text-slate-500 block">Metadata Origin</span>
+                <span className={`font-semibold ${agentData.metadata_source === 'live' ? 'text-cyan-300' : 'text-amber-400'}`}>
+                  {agentData.metadata_source === 'live' ? '⚡ LIVE DataHub' : '⚡ Offline Demo Fallback'}
+                </span>
               </div>
               <div>
                 <span className="text-slate-500 block">Execution Speed</span>
@@ -112,11 +115,12 @@ export default function FleetGuardModal({ vehicleId, alertType, onClose, onCompl
               </div>
               <div>
                 <span className="text-slate-500 block">DataHub Write-Back</span>
-                <span className={`font-semibold ${agentData.writeback?.success ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {agentData.writeback?.datahub_written ? '✓ Synced to GMS' : '✓ Agent Local Record'}
+                <span className={`font-semibold ${agentData.writeback?.datahub_written ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {agentData.writeback?.datahub_written ? '✓ Synced to GMS' : '⚠ Offline Local Record'}
                 </span>
               </div>
             </div>
+
 
             {/* Stages Vertical Timeline */}
             <div className="space-y-3">

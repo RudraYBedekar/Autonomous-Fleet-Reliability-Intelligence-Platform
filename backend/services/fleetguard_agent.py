@@ -81,14 +81,15 @@ class FleetGuardAgent:
             "stage": 2,
             "name": "DataHub Metadata & Lineage Retrieval",
             "status": "COMPLETED",
-            "details": f"Queried DataHub MCP: Asset '{asset_name}', Owner '{owner}'. Identified {len(affected_models)} downstream ML models.",
+            "details": f"Queried DataHub: Asset '{asset_name}', Owner '{owner}'. Source: {dh_context.metadata_source.upper()}. Identified {len(affected_models)} downstream ML models.",
             "datahub_payload": {
                 "asset": asset_name,
                 "owner": owner,
                 "schema_fields_count": len(dh_context.schema_fields),
-
                 "upstream_sensors": dh_context.upstream,
                 "downstream_models": affected_models,
+                "metadata_source": dh_context.metadata_source,
+                "datahub_live": dh_context.datahub_live,
             },
         })
 
@@ -106,7 +107,7 @@ class FleetGuardAgent:
             f"- Battery Level: {vehicle.get('battery_pct')}%\n"
             f"- Health Score: {vehicle.get('health_score')}%\n"
             f"- RUL Remaining: {vehicle.get('maintenance_rul_pct')}%\n\n"
-            f"DATAHUB METADATA CONTEXT:\n"
+            f"DATAHUB METADATA CONTEXT ({dh_context.metadata_source.upper()}):\n"
             f"- Feature Dataset: {asset_name}\n"
             f"- Technical Owner: {owner}\n"
             f"- Downstream ML Models (Blast Radius): {', '.join(affected_models)}\n\n"
@@ -114,11 +115,13 @@ class FleetGuardAgent:
         )
 
         ai_response_text = query_bedrock_llm(user_prompt, system_prompt=system_prompt)
-
+        bedrock_used = True
 
         # Fallback structured prose if Bedrock unavailable locally
-        if not ai_response_text or "Unable to locate credentials" in ai_response_text or "Mock Bedrock Response" in ai_response_text:
+        if not ai_response_text or "Unable to locate credentials" in ai_response_text or "Mock Bedrock Response" in ai_response_text or "Bedrock Error" in ai_response_text:
+            bedrock_used = False
             ai_response_text = (
+                f"[OFFLINE REASONING — AWS Bedrock unavailable]\n"
                 f"AUTONOMOUS AGENT DIAGNOSTIC REPORT [{vehicle_id}]\n\n"
                 f"1. Root Cause Identification:\n"
                 f"Accelerated voltage drop and thermal divergence detected in high-voltage battery cell pack #4 during active route transit.\n\n"
@@ -133,8 +136,9 @@ class FleetGuardAgent:
             "stage": 3,
             "name": "AI Blast Radius & Reasoning",
             "status": "COMPLETED",
-            "details": "AWS Bedrock / LLM reasoning complete with DataHub metadata context injected.",
+            "details": f"AI reasoning complete ({'AWS Bedrock' if bedrock_used else 'Offline Fallback Engine'}).",
             "reasoning_summary": ai_response_text,
+            "bedrock_used": bedrock_used,
         })
 
         # STAGE 4: Safe Mitigation Action Execution
@@ -156,13 +160,15 @@ class FleetGuardAgent:
             root_cause=f"{active_alert} on {vehicle_id}",
             action_taken=action_msg,
             affected_models=affected_models,
+            vehicle_id=vehicle_id,
         )
 
+        dh_written = wb_result.get("datahub_written", False)
         agent_steps.append({
             "stage": 5,
             "name": "DataHub Write-Back Persistence",
-            "status": "COMPLETED" if wb_result.get("success") else "PARTIAL",
-            "details": f"Emitted tags '#fleetguard_investigated', '#auto_mitigated' to DataHub GMS. Mode: {wb_result.get('mode')}.",
+            "status": "COMPLETED" if dh_written else "OFFLINE",
+            "details": f"Emitted tags '#fleetguard_investigated', '#auto_mitigated' to DataHub GMS ({wb_result.get('mode')})." if dh_written else f"DataHub GMS offline/unreachable. Record saved locally ({wb_result.get('mode')}).",
             "writeback_data": wb_result,
         })
 
@@ -177,6 +183,7 @@ class FleetGuardAgent:
             "root_cause_summary": ai_response_text,
             "affected_models": affected_models,
             "datahub_owner": owner,
+            "metadata_source": dh_context.metadata_source,
             "mitigation_action": action_msg,
             "writeback": wb_result,
         }
@@ -184,3 +191,4 @@ class FleetGuardAgent:
 
 # Singleton instance
 fleetguard_agent = FleetGuardAgent()
+

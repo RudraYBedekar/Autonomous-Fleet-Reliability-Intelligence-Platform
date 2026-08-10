@@ -27,6 +27,9 @@ class NormalizedAssetContext(BaseModel):
     schema_fields: list[dict[str, Any]] = Field(default_factory=list, description="Schema field definitions.")
     upstream: list[dict[str, Any]] = Field(default_factory=list, description="Upstream lineage dependencies.")
     downstream: list[dict[str, Any]] = Field(default_factory=list, description="Downstream lineage impact.")
+    metadata_source: str = Field(default="live", description="Source of metadata: 'live' or 'fallback'.")
+    datahub_live: bool = Field(default=True, description="True if fetched live from DataHub GMS.")
+    fallback_used: bool = Field(default=False, description="True if demo fallback was injected.")
 
 
 class FleetGuardContextPayload(BaseModel):
@@ -41,3 +44,21 @@ class FleetGuardContextPayload(BaseModel):
     affected_models: list[str] = Field(default_factory=list, description="Downstream ML models or features impacted.")
     owner: str | None = Field(default=None, description="Primary asset owner.")
     description: str | None = Field(default=None, description="Asset description.")
+    metadata_source: str = Field(default="live", description="Metadata origin: 'live' or 'fallback'.")
+    datahub_live: bool = Field(default=True, description="Whether live DataHub GMS was read.")
+    fallback_used: bool = Field(default=False, description="Whether fallback metadata was used.")
+
+
+class InvestigationRecord(BaseModel):
+    """Structured record of an AI agent vehicle investigation."""
+
+    investigation_id: str = Field(..., description="Unique investigation identifier.")
+    vehicle_id: str = Field(..., description="Target vehicle ID.")
+    timestamp: str = Field(..., description="ISO timestamp of investigation.")
+    severity: str = Field(..., description="Alert severity level.")
+    root_cause: str = Field(..., description="Root cause summary.")
+    affected_models: list[str] = Field(default_factory=list, description="Downstream ML models impacted.")
+    action_taken: str = Field(..., description="Mitigation action executed.")
+    datahub_written: bool = Field(..., description="Whether written back to DataHub GMS.")
+    metadata_source: str = Field(default="live", description="Metadata origin ('live' | 'fallback').")
+
