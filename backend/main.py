@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 
-from backend.routers import telemetry, websockets, ai, fleet, datahub
+from backend.routers import telemetry, websockets, ai, fleet, datahub, fleetguard
 from backend.database.db import engine, Base
 from backend.services.generator import get_generator
 import backend.services.generator as generator_module
@@ -36,6 +36,8 @@ app.include_router(websockets.router)
 app.include_router(ai.router)
 app.include_router(fleet.router)
 app.include_router(datahub.router)
+app.include_router(fleetguard.router)
+
 
 
 @app.on_event("startup")

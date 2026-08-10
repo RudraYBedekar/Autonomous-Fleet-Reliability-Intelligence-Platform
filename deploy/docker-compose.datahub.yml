@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  datahub-gms:
+    image: acryldata/datahub-gms:v0.12.0
+    container_name: datahub-gms
+    ports:
+      - "8080:8080"
+    environment:
+      - DATAHUB_GMS_PORT=8080
+      - EBEAN_DATASOURCE_USERNAME=datahub
+      - EBEAN_DATASOURCE_PASSWORD=datahub
+      - EBEAN_DATASOURCE_URL=jdbc:mysql://mysql:3306/datahub?useSSL=false&allowPublicKeyRetrieval=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  datahub-frontend:
+    image: acryldata/datahub-frontend-react:v0.12.0
+    container_name: datahub-frontend
+    ports:
+      - "9002:9002"
+    environment:
+      - DATAHUB_GMS_HOST=datahub-gms
+      - DATAHUB_GMS_PORT=8080
+    depends_on:
+      - datahub-gms

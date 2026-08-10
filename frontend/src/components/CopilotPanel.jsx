@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  Bot, X, Send, Sparkles, MapPin, Users, Battery, HeartPulse, Gauge, Wrench, ShieldAlert, Navigation, Phone, MessageSquare, AlertTriangle, RefreshCw
+  Bot, X, Send, Sparkles, MapPin, Users, Battery, HeartPulse, Gauge, Wrench, ShieldAlert, Navigation, Phone, MessageSquare, AlertTriangle, RefreshCw, Cpu, Database
 } from 'lucide-react';
 import { apiUrl } from '../api';
+import FleetGuardModal from './FleetGuardModal';
 
 const SUGGESTIONS = [
+  { label: '🤖 Autonomous Agent Loop', query: '__AGENT_LOOP__' },
   { label: '🚗 Search car-003', query: 'Search car-003' },
   { label: '👥 Passenger Summary', query: 'Show passenger summary across fleet' },
   { label: '⚡ Low Battery EVs', query: 'Which cars have low battery?' },
@@ -17,13 +19,15 @@ export default function CopilotPanel({ isOpen, onClose, onSelect, selectedId }) 
     {
       id: 'welcome',
       sender: 'bot',
-      text: 'Hello! I am **FleetGuard AI Copilot**. Search any vehicle (e.g. `car-001` through `car-015`) to get its description, passenger info, live telemetry metrics, route details, and diagnostics!',
+      text: 'Hello! I am FleetGuard AI Copilot. Search any vehicle (car-001 to car-015) to view live telemetry, DataHub ML model lineage, passenger manifests, and autonomous agent diagnostics.',
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [diagnosingId, setDiagnosingId] = useState(null);
+  const [showAgentModal, setShowAgentModal] = useState(false);
   const chatEndRef = useRef(null);
+
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,7 +41,13 @@ export default function CopilotPanel({ isOpen, onClose, onSelect, selectedId }) 
     const text = (queryText || input).trim();
     if (!text || loading) return;
 
+    if (text === '__AGENT_LOOP__') {
+      setShowAgentModal(true);
+      return;
+    }
+
     const userMsg = { id: Date.now().toString(), sender: 'user', text };
+
     setMessages((prev) => [...prev, userMsg]);
     if (!queryText) setInput('');
     setLoading(true);
@@ -307,6 +317,14 @@ export default function CopilotPanel({ isOpen, onClose, onSelect, selectedId }) 
           </button>
         </form>
       </div>
+
+      {showAgentModal && (
+        <FleetGuardModal
+          vehicleId={selectedId || 'car-001'}
+          onClose={() => setShowAgentModal(false)}
+        />
+      )}
     </div>
   );
 }
+

@@ -56,5 +56,19 @@ def send_passenger_message(vehicle_id: str, message: str) -> dict:
     return entry
 
 
+def log_dispatch_action(vehicle_id: str, action: str, detail: str) -> dict:
+    entry = {
+        "vehicle_id": vehicle_id,
+        "action": action,
+        "status": "completed",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "detail": detail,
+    }
+    _log.append(entry)
+    print(f"[Dispatch Action] {detail}")
+    return entry
+
+
 def get_dispatch_log(limit: int = 50) -> list[dict]:
     return _log[-limit:]
+

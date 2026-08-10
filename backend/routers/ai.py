@@ -132,6 +132,8 @@ def ask_copilot(req: QueryRequest):
                     else "Alert Status: Nominal - No Active System Faults"
                 )
 
+                eta_val = v.get("eta_minutes")
+                eta_str = f"{eta_val:.1f}" if eta_val is not None else "5.0"
                 llm_response = (
                     f"VEHICLE STATUS REPORT: {v['vehicle_id']} ({v['driver_name']})\n\n"
                     f"1. Executive Summary\n"
@@ -141,7 +143,7 @@ def ask_copilot(req: QueryRequest):
                     f"- Passengers Onboard: {v['passenger_count']}\n"
                     f"- Pickup Address: {v['pickup_address']}\n"
                     f"- Destination Address: {v['destination_address']}\n"
-                    f"- Estimated Arrival (ETA): ~{v.get('eta_minutes', 5.0):.1f} minutes\n\n"
+                    f"- Estimated Arrival (ETA): ~{eta_str} minutes\n\n"
                     f"3. Real-Time Telemetry and Systems Health\n"
                     f"- Ground Speed: {v.get('speed_kmh', 0):.1f} km/h\n"
                     f"- Battery Level: {v.get('battery_pct', 90):.1f}%\n"
@@ -154,6 +156,7 @@ def ask_copilot(req: QueryRequest):
                     f"5. Action Protocol\n"
                     f"Automated telemetry tracking active. Fleet dispatchers can contact driver directly or click 'Focus on Map' below to track vehicle position in real time."
                 )
+
             elif "battery" in query_text.lower() or "charging" in query_text.lower():
                 low_batt = [v for v in all_vehicles if v.get("battery_pct", 100) < 50]
                 names = ", ".join([v["vehicle_id"] for v in low_batt]) if low_batt else "None"
@@ -213,6 +216,9 @@ def diagnose_vehicle(vehicle_id: str):
     if not info:
         raise HTTPException(status_code=404, detail="Vehicle not found")
 
+    from backend.services.fleetguard_agent import fleetguard_agent
+    agent_res = fleetguard_agent.run_investigation(vehicle_id=vehicle_id)
+
     sensor = "Battery" if info.get("battery_pct", 100) < 30 else ("LiDAR" if info.get("health_score", 100) < 85 else "EngineRPM")
     rca_res = RootCauseAnalyzer.analyze(
         sensor_id=sensor,
@@ -221,23 +227,18 @@ def diagnose_vehicle(vehicle_id: str):
         vibration=1.4 if sensor == "LiDAR" else 0.4,
     )
 
-    prompt = (
-        f"Generate an expert engineering diagnostic brief for autonomous vehicle {vehicle_id}.\n"
-        f"Vehicle state: {info}\n"
-        f"Sensor diagnosis: {rca_res}\n"
-        "Explain the physical defect, operational risk to passengers, and step-by-step repair instruction. "
-        "Do NOT use markdown bold stars (**), hashtags, or emojis."
-    )
-    system_prompt = "You are FleetGuard Lead Diagnostics Engineer. Write clean plain text without markdown symbols."
-    analysis_text = query_bedrock_llm(prompt, system_prompt)
-    if "Bedrock Error" in analysis_text or not analysis_text:
-        analysis_text = (
-            f"DIAGNOSTIC REPORT FOR {vehicle_id}\n\n"
-            f"- Primary Fault: {rca_res['root_cause']}\n"
-            f"- Confidence: {rca_res['confidence_score']}%\n"
-            f"- Recommended Action: {rca_res['recommended_action']}\n"
-            f"- Safety Risk Level: Moderate - Passenger safety monitored."
-        )
+    return {
+        "vehicle_id": vehicle_id,
+        "vehicle_info": info,
+        "rca": rca_res,
+        "ai_analysis": agent_res["root_cause_summary"],
+        "affected_models": agent_res["affected_models"],
+        "datahub_owner": agent_res["datahub_owner"],
+        "mitigation_action": agent_res["mitigation_action"],
+        "datahub_writeback": agent_res["writeback"],
+        "agent_loop": agent_res,
+    }
+
 
     return {
         "vehicle_id": vehicle_id,

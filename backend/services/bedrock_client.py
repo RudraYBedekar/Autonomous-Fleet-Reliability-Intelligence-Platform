@@ -125,13 +125,16 @@ def list_active_models() -> list[str]:
 
 def query_bedrock_llm(prompt: str, system_prompt: str = "You are FleetGuard AI agent.") -> str:
     """Invokes AWS Bedrock model, trying active candidates with multi-vendor payloads."""
-    client = get_bedrock_runtime()
+    try:
+        client = get_bedrock_runtime()
+    except Exception as e:
+        return f"Bedrock Error: Unable to initialize AWS client ({e})."
 
     seen = set()
     candidates = [m for m in MODEL_CANDIDATES if not (m in seen or seen.add(m))]
 
     last_error = None
-    for model_id in candidates:
+    for model_id in candidates[:3]:  # Try top 3 candidate models
         try:
             payload = format_payload(model_id, prompt, system_prompt)
             response = client.invoke_model(
@@ -140,6 +143,19 @@ def query_bedrock_llm(prompt: str, system_prompt: str = "You are FleetGuard AI a
                 accept="application/json",
                 body=json.dumps(payload),
             )
+            response_body = json.loads(response["body"].read().decode("utf-8"))
+            result_text = parse_response(model_id, response_body)
+            print(f"[Bedrock Success] Invoked model: '{model_id}'")
+            return result_text
+        except Exception as e:
+            last_error = e
+            err_str = str(e)
+            if "Unable to locate credentials" in err_str or "NoCredentialsError" in err_str:
+                print("[Bedrock Warning] AWS credentials not found. Using intelligent DataHub fallback reasoning.")
+                break
+            print(f"[Bedrock Retry] Model '{model_id}' failed: {e}")
+            continue
+
 
             response_body = json.loads(response["body"].read().decode("utf-8"))
             result_text = parse_response(model_id, response_body)

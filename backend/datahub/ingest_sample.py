@@ -1,10 +1,12 @@
 """
 Sample DataHub Metadata Ingestion Script for Autonomous Fleet Reliability Platform.
 
-Publishes sample fleet dataset schemas and lineage entities into DataHub Core:
+Publishes sample fleet dataset schemas, ML Model entities, and complete lineage graph into DataHub Core:
 - vehicle_health_features (Dataset)
 - fleet_trip_manifests (Dataset)
 - car-001_lidar_sensor (Upstream Hardware Sensor)
+- rul_predictor (Downstream ML Model)
+- anomaly_detector (Downstream ML Model)
 
 Usage:
     python -m backend.datahub.ingest_sample
@@ -19,17 +21,24 @@ from datahub.ingestion.graph.config import DatahubClientConfig
 from datahub.metadata.schema_classes import (
     AuditStampClass,
     DatasetPropertiesClass,
+    OwnerClass,
+    OwnershipClass,
+    OwnershipTypeClass,
     UpstreamClass,
     UpstreamLineageClass,
 )
 
 
 def ingest_fleet_metadata() -> None:
-    """Publishes fleet metadata entities and lineage directly to DataHub GMS."""
+    """Publishes fleet metadata entities, ML models, and lineage graph directly to DataHub GMS."""
     gms_url = os.getenv("DATAHUB_GMS_URL", "http://localhost:8080").rstrip("/")
-    print(f"Ingesting fleet metadata into DataHub GMS at: {gms_url}")
+    print(f"Ingesting fleet metadata & ML lineage into DataHub GMS at: {gms_url}")
 
-    graph = DataHubGraph(DatahubClientConfig(server=gms_url))
+    try:
+        graph = DataHubGraph(DatahubClientConfig(server=gms_url))
+    except Exception as err:
+        print(f"Warning: DataHub Graph connection failed: {err}")
+        return
 
     # 1. vehicle_health_features dataset
     ds1_mcp = MetadataChangeProposalWrapper(
@@ -42,27 +51,60 @@ def ingest_fleet_metadata() -> None:
                 "fleet_size": "15",
                 "update_frequency": "1000ms",
                 "domain": "fleet_reliability",
+                "owner": "fleet_ops",
             },
         ),
     )
     graph.emit(ds1_mcp)
 
-    # 2. fleet_trip_manifests dataset
-    ds2_mcp = MetadataChangeProposalWrapper(
+    # Ownership aspect
+    owner_mcp = MetadataChangeProposalWrapper(
         entityType="dataset",
-        entityUrn="urn:li:dataset:(urn:li:dataPlatform:postgres,fleet_trip_manifests,PROD)",
+        entityUrn="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
+        aspect=OwnershipClass(
+            owners=[
+                OwnerClass(
+                    owner="urn:li:corpuser:fleet_ops",
+                    type=OwnershipTypeClass.TECHNICAL_OWNER,
+                )
+            ]
+        ),
+    )
+    graph.emit(owner_mcp)
+
+    # 2. Downstream ML Model 1: RUL Predictor
+    ml1_mcp = MetadataChangeProposalWrapper(
+        entityType="dataset",
+        entityUrn="urn:li:dataset:(urn:li:dataPlatform:ml,rul_predictor_model,PROD)",
         aspect=DatasetPropertiesClass(
-            name="fleet_trip_manifests",
-            description="Passenger manifests, pickup/destination coordinates, and driver contacts for Redwood City autonomous EV fleet.",
+            name="rul_predictor_model",
+            description="Production XGBoost model predicting battery/component Remaining Useful Life (RUL %).",
             customProperties={
-                "city": "Redwood City, CA",
-                "status": "Active",
+                "model_type": "XGBoostRegressor",
+                "accuracy_mae": "1.4%",
+                "status": "ACTIVE_PRODUCTION",
             },
         ),
     )
-    graph.emit(ds2_mcp)
+    graph.emit(ml1_mcp)
 
-    # 3. car-001_lidar_sensor upstream hardware sensor
+    # 3. Downstream ML Model 2: Isolation Forest Anomaly Detector
+    ml2_mcp = MetadataChangeProposalWrapper(
+        entityType="dataset",
+        entityUrn="urn:li:dataset:(urn:li:dataPlatform:ml,anomaly_detector_model,PROD)",
+        aspect=DatasetPropertiesClass(
+            name="anomaly_detector_model",
+            description="Production Isolation Forest model flagging telemetry anomalies & hardware sensor drift.",
+            customProperties={
+                "model_type": "IsolationForest",
+                "contamination": "0.05",
+                "status": "ACTIVE_PRODUCTION",
+            },
+        ),
+    )
+    graph.emit(ml2_mcp)
+
+    # 4. Upstream Hardware Sensor: car-001_lidar_sensor
     ds3_mcp = MetadataChangeProposalWrapper(
         entityType="dataset",
         entityUrn="urn:li:dataset:(urn:li:dataPlatform:kafka,car-001_lidar_sensor,PROD)",
@@ -74,8 +116,8 @@ def ingest_fleet_metadata() -> None:
     )
     graph.emit(ds3_mcp)
 
-    # 4. Lineage: car-001_lidar_sensor -> vehicle_health_features
-    lineage_mcp = MetadataChangeProposalWrapper(
+    # 5. Upstream Lineage: car-001_lidar_sensor -> vehicle_health_features
+    lineage_up_mcp = MetadataChangeProposalWrapper(
         entityType="dataset",
         entityUrn="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
         aspect=UpstreamLineageClass(
@@ -91,10 +133,41 @@ def ingest_fleet_metadata() -> None:
             ]
         ),
     )
-    graph.emit(lineage_mcp)
+    graph.emit(lineage_up_mcp)
 
-    print("SUCCESS: Emitted fleet datasets and lineage graph into DataHub Core!")
-    print("Refresh http://localhost:9002 in your browser to inspect the dataset entities!")
+    # 6. Downstream Lineage: vehicle_health_features -> ML Models
+    lineage_down1_mcp = MetadataChangeProposalWrapper(
+        entityType="dataset",
+        entityUrn="urn:li:dataset:(urn:li:dataPlatform:ml,rul_predictor_model,PROD)",
+        aspect=UpstreamLineageClass(
+            upstreams=[
+                UpstreamClass(
+                    dataset="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
+                    type="TRANSFORMED",
+                    auditStamp=AuditStampClass(time=1000, actor="urn:li:corpuser:fleet_ops"),
+                )
+            ]
+        ),
+    )
+    graph.emit(lineage_down1_mcp)
+
+    lineage_down2_mcp = MetadataChangeProposalWrapper(
+        entityType="dataset",
+        entityUrn="urn:li:dataset:(urn:li:dataPlatform:ml,anomaly_detector_model,PROD)",
+        aspect=UpstreamLineageClass(
+            upstreams=[
+                UpstreamClass(
+                    dataset="urn:li:dataset:(urn:li:dataPlatform:kafka,vehicle_health_features,PROD)",
+                    type="TRANSFORMED",
+                    auditStamp=AuditStampClass(time=1000, actor="urn:li:corpuser:fleet_ops"),
+                )
+            ]
+        ),
+    )
+    graph.emit(lineage_down2_mcp)
+
+    print("SUCCESS: Emitted fleet datasets, ML models, and complete lineage graph into DataHub Core!")
+    print("Refresh http://localhost:9002 in your browser to inspect the entities and lineage!")
 
 
 if __name__ == "__main__":

@@ -16,3 +16,6 @@ matplotlib
 pytest
 httpx
 mcp-server-datahub
+boto3>=1.28.0
+acryl-datahub>=0.12.0
+
