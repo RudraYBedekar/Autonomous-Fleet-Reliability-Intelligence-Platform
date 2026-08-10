@@ -153,8 +153,10 @@ def publish_live_fleet_metadata() -> Dict[str, Any]:
                 "entityType": "dataset",
                 "entityUrn": urn,
                 "aspectName": "datasetProperties",
+                "changeType": "UPSERT",
                 "aspect": {
-                    "json": json.dumps({
+                    "contentType": "application/json",
+                    "value": json.dumps({
                         "name": "vehicle_health_features",
                         "description": "Live real-time 15 EV telemetry feature set from FleetGuard Platform",
                         "customProperties": {"fleet_size": "15", "live_source": "FleetGuard Web App"},
@@ -171,6 +173,8 @@ def publish_live_fleet_metadata() -> Dict[str, Any]:
             "schemaName": "VehicleHealthFeatures",
             "platform": "urn:li:dataPlatform:kafka",
             "version": 0,
+            "created": {"time": 0, "actor": "urn:li:corpuser:unknown"},
+            "lastModified": {"time": 0, "actor": "urn:li:corpuser:unknown"},
             "hash": "",
             "platformSchema": {
                 "com.linkedin.pegasus2avro.schema.OtherSchema": {
@@ -180,33 +184,38 @@ def publish_live_fleet_metadata() -> Dict[str, Any]:
             "fields": [
                 {
                     "fieldPath": "battery_pct",
-                    "nativeDataType": "NUMBER",
+                    "nullable": False,
+                    "description": "HV traction battery state of charge %",
                     "type": {"type": {"com.linkedin.pegasus2avro.schema.NumberType": {}}},
-                    "description": "HV traction battery state of charge %"
+                    "nativeDataType": "NUMBER"
                 },
                 {
                     "fieldPath": "battery_temperature",
-                    "nativeDataType": "NUMBER",
+                    "nullable": False,
+                    "description": "Battery pack temperature in Celsius (°C)",
                     "type": {"type": {"com.linkedin.pegasus2avro.schema.NumberType": {}}},
-                    "description": "Battery pack temperature in Celsius (°C)"
+                    "nativeDataType": "NUMBER"
                 },
                 {
                     "fieldPath": "vibration_hz",
-                    "nativeDataType": "NUMBER",
+                    "nullable": False,
+                    "description": "LiDAR mount vibration frequency (Hz)",
                     "type": {"type": {"com.linkedin.pegasus2avro.schema.NumberType": {}}},
-                    "description": "LiDAR mount vibration frequency (Hz)"
+                    "nativeDataType": "NUMBER"
                 },
                 {
                     "fieldPath": "health_score",
-                    "nativeDataType": "NUMBER",
+                    "nullable": False,
+                    "description": "Composite vehicle health index (0-100%)",
                     "type": {"type": {"com.linkedin.pegasus2avro.schema.NumberType": {}}},
-                    "description": "Composite vehicle health index (0-100%)"
+                    "nativeDataType": "NUMBER"
                 },
                 {
                     "fieldPath": "maintenance_rul_pct",
-                    "nativeDataType": "NUMBER",
+                    "nullable": False,
+                    "description": "Predicted Remaining Useful Life (%)",
                     "type": {"type": {"com.linkedin.pegasus2avro.schema.NumberType": {}}},
-                    "description": "Predicted Remaining Useful Life (%)"
+                    "nativeDataType": "NUMBER"
                 }
             ]
         }
@@ -215,8 +224,10 @@ def publish_live_fleet_metadata() -> Dict[str, Any]:
                 "entityType": "dataset",
                 "entityUrn": urn,
                 "aspectName": "schemaMetadata",
+                "changeType": "UPSERT",
                 "aspect": {
-                    "json": json.dumps(schema_dict)
+                    "contentType": "application/json",
+                    "value": json.dumps(schema_dict)
                 },
             }
         }
