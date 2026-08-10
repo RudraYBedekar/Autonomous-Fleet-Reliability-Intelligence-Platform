@@ -105,6 +105,7 @@ class FleetGenerator:
         if fleet_size != FLEET_SIZE:
             raise ValueError(f"Fleet size must be exactly {FLEET_SIZE}")
         self._vehicles: list[_VehicleState] = []
+        self._latest_telemetry_snapshot: dict[str, VehicleTelemetry] = {}
         self._init_fleet()
 
     def _init_fleet(self) -> None:
@@ -402,9 +403,15 @@ class FleetGenerator:
                     "alert_severity": top.severity,
                 })
 
+            self._latest_telemetry_snapshot[point.vehicle_id] = point
             payloads.append(point)
 
         return payloads
+
+    def get_latest(self, vehicle_id: str | None = None) -> dict[str, VehicleTelemetry] | VehicleTelemetry | None:
+        if vehicle_id:
+            return self._latest_telemetry_snapshot.get(vehicle_id)
+        return self._latest_telemetry_snapshot
 
     async def run(self, publish) -> None:
         print(f"FleetGenerator started — {FLEET_SIZE} EVs @ {1 / TICK_INTERVAL_S:.0f} Hz")
