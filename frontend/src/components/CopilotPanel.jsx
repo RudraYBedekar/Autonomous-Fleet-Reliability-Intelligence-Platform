@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Bot, X, Send, Sparkles, MapPin, Users, Battery, HeartPulse, Gauge, Wrench, ShieldAlert, Navigation, Phone, MessageSquare, AlertTriangle, RefreshCw
 } from 'lucide-react';
-import { apiUrl } from '../utils/format';
+import { apiUrl } from '../api';
 
 const SUGGESTIONS = [
   { label: '🚗 Search car-003', query: 'Search car-003' },
