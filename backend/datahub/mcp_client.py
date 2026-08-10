@@ -21,12 +21,16 @@ import subprocess
 import urllib.parse
 import urllib.request
 from typing import Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class DataHubMCPClient:
     """FastAPI MCP Client for official DataHub MCP Server (acryldata/mcp-server-datahub)."""
 
     def __init__(self) -> None:
+        load_dotenv()
         self.gms_url: str = os.getenv("DATAHUB_GMS_URL", "http://localhost:8080").rstrip("/")
         self.gms_token: str | None = os.getenv("DATAHUB_GMS_TOKEN") or None
         self.enabled: bool = os.getenv("DATAHUB_MCP_ENABLED", "true").lower() == "true"
