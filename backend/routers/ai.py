@@ -114,10 +114,11 @@ def ask_copilot(req: QueryRequest):
 
         system_prompt = (
             "You are FleetGuard AI Assistant, an expert autonomous EV fleet operations engineer. "
-            "Your responses MUST be professional, executive-ready, authoritative, and structured. "
+            "Your responses MUST be professional, executive-ready, authoritative, and cleanly formatted. "
+            "Do NOT use markdown bold symbols (**), hashtags (###), bullet symbols (•), backticks (`), or emojis. "
             "Always include passenger count, driver contact, telemetry metrics, route details, and alert state. "
             "Do NOT state that telemetry or driver data is missing when target vehicle data is present. "
-            "Do NOT append conversational filler, disclaimers, or 'Would you like me to...' lists at the end."
+            "Do NOT append conversational filler, disclaimers, or prompt questions at the end."
         )
 
         llm_response = query_bedrock_llm(prompt=context_str, system_prompt=system_prompt)
@@ -126,64 +127,64 @@ def ask_copilot(req: QueryRequest):
             if matched_vehicle:
                 v = matched_vehicle
                 alert_section = (
-                    f"**Active Operational Alert**: {v['active_alert']} (Severity: {str(v.get('alert_severity', 'warning')).upper()})"
+                    f"Active Operational Alert: {v['active_alert']} (Severity: {str(v.get('alert_severity', 'warning')).upper()})"
                     if v.get("active_alert")
-                    else "**Alert Status**: Nominal - No Active System Faults"
+                    else "Alert Status: Nominal - No Active System Faults"
                 )
 
                 llm_response = (
-                    f"### Vehicle Status Report: {v['vehicle_id']} ({v['driver_name']})\n\n"
-                    f"**1. Executive Summary**\n"
-                    f"Vehicle **{v['vehicle_id']}** is an all-electric ground vehicle (BEV) operated by **{v['driver_name']}** ({v['driver_phone']}). "
-                    f"The vehicle is currently in **{v.get('trip_status', 'en_route').replace('_', ' ').title()}** status carrying **{v['passenger_count']} passenger(s)** on the **{v['route_name']}** route ({v['route_difficulty']} complexity).\n\n"
-                    f"**2. Passenger & Route Manifest**\n"
-                    f"• **Passengers Onboard**: {v['passenger_count']}\n"
-                    f"• **Pickup Address**: {v['pickup_address']}\n"
-                    f"• **Destination Address**: {v['destination_address']}\n"
-                    f"• **Estimated Arrival (ETA)**: ~{v.get('eta_minutes', 5.0):.1f} minutes\n\n"
-                    f"**3. Real-Time Telemetry & Systems Health**\n"
-                    f"• **Ground Speed**: {v.get('speed_kmh', 0):.1f} km/h\n"
-                    f"• **Battery Level**: {v.get('battery_pct', 90):.1f}%\n"
-                    f"• **Health Index**: {v.get('health_score', 95):.1f}%\n"
-                    f"• **Maintenance RUL**: {v.get('maintenance_rul_pct', 100):.1f}% remaining\n"
-                    f"• **Road Zone**: {v.get('road_zone', 'residential').capitalize()} zone\n"
-                    f"• **Engine Status**: {v['engine_status'].title()} | {v['odometer_km']:.1f} km odometer\n\n"
-                    f"**4. Operational Alert Status**\n"
+                    f"VEHICLE STATUS REPORT: {v['vehicle_id']} ({v['driver_name']})\n\n"
+                    f"1. Executive Summary\n"
+                    f"Vehicle {v['vehicle_id']} is an all-electric ground vehicle (BEV) operated by {v['driver_name']} ({v['driver_phone']}). "
+                    f"The vehicle is currently in {v.get('trip_status', 'en_route').replace('_', ' ').title()} status carrying {v['passenger_count']} passenger(s) on the {v['route_name']} route ({v['route_difficulty']} complexity).\n\n"
+                    f"2. Passenger and Route Manifest\n"
+                    f"- Passengers Onboard: {v['passenger_count']}\n"
+                    f"- Pickup Address: {v['pickup_address']}\n"
+                    f"- Destination Address: {v['destination_address']}\n"
+                    f"- Estimated Arrival (ETA): ~{v.get('eta_minutes', 5.0):.1f} minutes\n\n"
+                    f"3. Real-Time Telemetry and Systems Health\n"
+                    f"- Ground Speed: {v.get('speed_kmh', 0):.1f} km/h\n"
+                    f"- Battery Level: {v.get('battery_pct', 90):.1f}%\n"
+                    f"- Health Index: {v.get('health_score', 95):.1f}%\n"
+                    f"- Maintenance RUL: {v.get('maintenance_rul_pct', 100):.1f}% remaining\n"
+                    f"- Road Zone: {v.get('road_zone', 'residential').capitalize()} zone\n"
+                    f"- Engine Status: {v['engine_status'].title()} | {v['odometer_km']:.1f} km odometer\n\n"
+                    f"4. Operational Alert Status\n"
                     f"{alert_section}\n\n"
-                    f"**5. Action Protocol**\n"
+                    f"5. Action Protocol\n"
                     f"Automated telemetry tracking active. Fleet dispatchers can contact driver directly or click 'Focus on Map' below to track vehicle position in real time."
                 )
             elif "battery" in query_text.lower() or "charging" in query_text.lower():
                 low_batt = [v for v in all_vehicles if v.get("battery_pct", 100) < 50]
                 names = ", ".join([v["vehicle_id"] for v in low_batt]) if low_batt else "None"
                 llm_response = (
-                    "### Fleet Battery & Charging Analysis\n\n"
-                    f"• **Low Battery Count (<50%)**: {len(low_batt)} vehicle(s)\n"
-                    f"• **Vehicles Requiring Charging**: {names}\n"
-                    "• **Automatic Rerouting**: Enabled across Redwood City charging network"
+                    "FLEET BATTERY AND CHARGING ANALYSIS\n\n"
+                    f"- Low Battery Count (<50%): {len(low_batt)} vehicle(s)\n"
+                    f"- Vehicles Requiring Charging: {names}\n"
+                    "- Automatic Rerouting: Enabled across Redwood City charging network"
                 )
             elif "passenger" in query_text.lower():
                 pass_total = sum(v.get("passenger_count", 0) for v in all_vehicles)
                 high_p = sorted(all_vehicles, key=lambda x: x.get("passenger_count", 0), reverse=True)[:3]
                 p_summary = ", ".join([f"{v['vehicle_id']} ({v['passenger_count']} passengers)" for v in high_p])
                 llm_response = (
-                    "### Passenger Transport Overview\n\n"
-                    f"• **Total Active Passengers**: {pass_total} currently in transport across 15 EVs\n"
-                    f"• **Highest Occupancy Vehicles**: {p_summary}\n"
-                    "• **Cabin Safety Status**: Nominal across all active routes"
+                    "PASSENGER TRANSPORT OVERVIEW\n\n"
+                    f"- Total Active Passengers: {pass_total} currently in transport across 15 EVs\n"
+                    f"- Highest Occupancy Vehicles: {p_summary}\n"
+                    "- Cabin Safety Status: Nominal across all active routes"
                 )
             elif "alert" in query_text.lower() or "critical" in query_text.lower():
                 alerts = [v for v in all_vehicles if v.get("active_alert")]
-                alert_lines = "\n".join([f"• **{v['vehicle_id']}**: {v['active_alert']} ({v.get('alert_severity', 'info').upper()})" for v in alerts]) if alerts else "No critical alerts active across the fleet."
+                alert_lines = "\n".join([f"- {v['vehicle_id']}: {v['active_alert']} ({v.get('alert_severity', 'info').upper()})" for v in alerts]) if alerts else "No critical alerts active across the fleet."
                 llm_response = (
-                    f"### Fleet Operational Alerts Summary ({len(alerts)} Active)\n\n"
+                    f"FLEET OPERATIONAL ALERTS SUMMARY ({len(alerts)} Active)\n\n"
                     f"{alert_lines}"
                 )
             else:
                 llm_response = (
-                    "### Fleet Guard Intelligence Overview (N=15 EVs)\n\n"
+                    "FLEET GUARD INTELLIGENCE OVERVIEW (N=15 EVs)\n\n"
                     "All 15 electric autonomous vehicles are operating on Redwood City, CA routes under active telemetry monitoring. "
-                    "You may query specific vehicle IDs (e.g. `car-001` through `car-015`) to view passenger manifests, live sensor readings, battery metrics, and diagnostics."
+                    "You may query specific vehicle IDs (e.g. car-001 through car-015) to view passenger manifests, live sensor readings, battery metrics, and diagnostics."
                 )
 
         return {
@@ -224,17 +225,18 @@ def diagnose_vehicle(vehicle_id: str):
         f"Generate an expert engineering diagnostic brief for autonomous vehicle {vehicle_id}.\n"
         f"Vehicle state: {info}\n"
         f"Sensor diagnosis: {rca_res}\n"
-        "Explain the physical defect, operational risk to passengers, and step-by-step repair instruction."
+        "Explain the physical defect, operational risk to passengers, and step-by-step repair instruction. "
+        "Do NOT use markdown bold stars (**), hashtags, or emojis."
     )
-    system_prompt = "You are FleetGuard Lead Diagnostics Engineer."
+    system_prompt = "You are FleetGuard Lead Diagnostics Engineer. Write clean plain text without markdown symbols."
     analysis_text = query_bedrock_llm(prompt, system_prompt)
     if "Bedrock Error" in analysis_text or not analysis_text:
         analysis_text = (
-            f"**Diagnostic Report for {vehicle_id}**\n\n"
-            f"• **Primary Fault**: {rca_res['root_cause']}\n"
-            f"• **Confidence**: {rca_res['confidence_score']}%\n"
-            f"• **Recommended Action**: {rca_res['recommended_action']}\n"
-            f"• **Safety Risk Level**: Moderate - Passenger safety monitored."
+            f"DIAGNOSTIC REPORT FOR {vehicle_id}\n\n"
+            f"- Primary Fault: {rca_res['root_cause']}\n"
+            f"- Confidence: {rca_res['confidence_score']}%\n"
+            f"- Recommended Action: {rca_res['recommended_action']}\n"
+            f"- Safety Risk Level: Moderate - Passenger safety monitored."
         )
 
     return {
@@ -257,17 +259,18 @@ def fleet_brief():
 
     prompt = (
         "Summarize fleet executive health brief for 15 EVs operating in Redwood City, CA.\n"
-        f"Total Passengers: {total_passengers}, Low Battery Vehicles: {low_battery_count}, Active Alerts: {alerts_count}."
+        f"Total Passengers: {total_passengers}, Low Battery Vehicles: {low_battery_count}, Active Alerts: {alerts_count}.\n"
+        "Do NOT use markdown bold stars (**), hashtags, or emojis."
     )
-    brief_text = query_bedrock_llm(prompt, "You are Chief Operations Officer AI Assistant.")
+    brief_text = query_bedrock_llm(prompt, "You are Chief Operations Officer AI Assistant. Write clean plain text without markdown symbols.")
     if "Bedrock Error" in brief_text or not brief_text:
         brief_text = (
-            "**Fleet Operations Executive Briefing**\n\n"
-            f"• **Active Fleet Size**: 15 Electric Vehicles (BEV)\n"
-            f"• **Passenger Capacity**: {total_passengers} passengers currently transported across Redwood City routes\n"
-            f"• **Charging Status**: {low_battery_count} vehicle(s) approaching low battery (<40%)\n"
-            f"• **Active Fleet Alerts**: {alerts_count} active system notifications\n"
-            "• **Operational Readiness**: 98.4% fleet health index"
+            "FLEET OPERATIONS EXECUTIVE BRIEFING\n\n"
+            f"- Active Fleet Size: 15 Electric Vehicles (BEV)\n"
+            f"- Passenger Capacity: {total_passengers} passengers currently transported across Redwood City routes\n"
+            f"- Charging Status: {low_battery_count} vehicle(s) approaching low battery (<40%)\n"
+            f"- Active Fleet Alerts: {alerts_count} active system notifications\n"
+            "- Operational Readiness: 98.4% fleet health index"
         )
 
     return {
@@ -277,4 +280,5 @@ def fleet_brief():
         "active_alerts_count": alerts_count,
         "executive_brief": brief_text,
     }
+
 
