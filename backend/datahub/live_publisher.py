@@ -107,9 +107,24 @@ def publish_live_fleet_metadata() -> Dict[str, Any]:
         graph.emit(owner_mcp)
 
         # 4. ML Models & Lineage
-        for model_name, model_desc in [
-            ("rul_predictor_model", "Live XGBoost Remaining Useful Life predictor"),
-            ("anomaly_detector_model", "Live Isolation Forest Telemetry anomaly detector"),
+        for model_name, model_desc, model_fields in [
+            (
+                "rul_predictor_model",
+                "Live XGBoost Remaining Useful Life predictor",
+                [
+                    SchemaFieldClass(fieldPath="predicted_rul_pct", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Predicted Remaining Useful Life %"),
+                    SchemaFieldClass(fieldPath="prediction_confidence", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Model prediction confidence score"),
+                ]
+            ),
+            (
+                "anomaly_detector_model",
+                "Live Isolation Forest Telemetry anomaly detector",
+                [
+                    SchemaFieldClass(fieldPath="anomaly_score", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Isolation Forest anomaly decision score"),
+                    SchemaFieldClass(fieldPath="is_anomaly", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="Binary anomaly alert indicator (0/1)"),
+                    SchemaFieldClass(fieldPath="vibration_drift_hz", nativeDataType="NUMBER", type=SchemaFieldDataTypeClass(type=NumberTypeClass()), description="LiDAR mount frequency drift magnitude"),
+                ]
+            ),
         ]:
             model_urn = f"urn:li:dataset:(urn:li:dataPlatform:ml,{model_name},PROD)"
             graph.emit(
@@ -117,6 +132,20 @@ def publish_live_fleet_metadata() -> Dict[str, Any]:
                     entityType="dataset",
                     entityUrn=model_urn,
                     aspect=DatasetPropertiesClass(name=model_name, description=model_desc),
+                )
+            )
+            graph.emit(
+                MetadataChangeProposalWrapper(
+                    entityType="dataset",
+                    entityUrn=model_urn,
+                    aspect=SchemaMetadataClass(
+                        schemaName=model_name,
+                        platform="urn:li:dataPlatform:ml",
+                        version=0,
+                        hash="",
+                        platformSchema=other_schema,
+                        fields=model_fields,
+                    ),
                 )
             )
             graph.emit(
